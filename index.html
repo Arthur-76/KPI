@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>KPI Dashboard – Minimal Glassy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --main-width: 1100px;
+      --main-padding-x: 32px;
+      --main-radius: 22px;
+      --main-shadow: 0 6px 24px #8ec6f755;
+      --header-bg: rgba(255,255,255,0.88);
+      --header-padding-x: 34px;
+      --header-margin-top: 20px;
+      --header-margin-bottom: 12px;
+      --header-min-height: 70px;
+      --logo-height: 44px;
+      --main-gap: 26px;
+      --card-padding: 28px 38px 23px 38px;
+      --card-radius: 21px;
+      --graph-min-height: 350px;
+      --graph-max-height: 65vh;
+      --graph-margin-top: 12px;
+    }
+
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #eaf3ff 0%, #f8fafb 100%);
+      min-height: 100vh;
+      color: #223056;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* === SIDEBAR GAUCHE FIXE === */
+    .sidebar {
+      background: linear-gradient(135deg, #eaf3ff 0%, #d8e4fa 100%);
+      box-shadow: 4px 0 22px #c5d6f7a0;
+      border-radius: 0 30px 30px 0;
+      min-width: 210px;
+      max-width: 240px;
+      width: 240px;
+      padding: 34px 17px 22px 17px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      z-index: 100;
+    }
+    .sb-btn {
+      background: linear-gradient(90deg, #eaf3ff 0%, #d8e4fa 100%);
+      color: #2574c5;
+      border-radius: 19px;
+      border: none;
+      font-size: 16.5px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      padding: 13px 23px;
+      display: flex; align-items: center; gap: 13px;
+      cursor: pointer;
+      transition: box-shadow 0.17s, background 0.18s, color 0.14s;
+      outline: none;
+      box-shadow: 0 1px 14px #c0d7f7b4;
+    }
+    .sb-btn.active,
+    .sb-btn:focus {
+      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
+      color: #0e3b4d;
+      box-shadow: 0 3px 18px #8ec6f773;
+    }
+    .sb-btn:hover {
+      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
+      color: #1686c1;
+    }
+
+    /* === HEADER/RUBAN PRINCIPAL CENTRÉ & ADAPTABLE === */
+    .header, .main {
+      max-width: var(--main-width);
+      width: 100%;
+      margin: 0 auto;
+    }
+    .header {
+      margin-top: var(--header-margin-top);
+      margin-bottom: var(--header-margin-bottom);
+      border-radius: var(--main-radius);
+      box-shadow: var(--main-shadow);
+      background: var(--header-bg);
+      backdrop-filter: blur(13px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 var(--header-padding-x);
+      min-height: var(--header-min-height);
+      position: relative;
+      z-index: 20;
+      border: 1.2px solid #e6e9ee;
+      transition: max-width 0.2s, width 0.2s;
+    }
+    .header .logos {
+      display: flex; align-items: center; gap: 15px;
+    }
+    .header .logos img {
+      height: var(--logo-height);
+      border-radius: 11px;
+      background: #fff;
+      box-shadow: 0 2px 7px #c3def977;
+    }
+    .header h1 {
+      font-size: 23px;
+      color: #1686c1;
+      flex: 1;
+      text-align: center;
+      font-weight: 700;
+      margin: 0 20px;
+      letter-spacing: 0.45px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    /* === ZONE CENTRALE (MODULABLE) === */
+    .main {
+      padding: 0 var(--main-padding-x) 38px var(--main-padding-x);
+      display: flex;
+      flex-direction: column;
+      gap: var(--main-gap);
+      min-height: 100vh;
+      box-sizing: border-box;
+      transition: max-width 0.2s, width 0.2s, padding 0.2s;
+      /* margin-left supprimé ici ! */
+    }
+
+    /* Décale le conteneur principal à droite du ruban */
+    .main-content {
+      margin-left: 240px;
+      flex:1; display: flex; flex-direction: column; min-height: 100vh;
+    }
+
+    /* === CARDS/SECTIONS === */
+    .card.section { display: none; }
+    .card.section.active { display: block; margin-top: 0; }
+    .card {
+      background: rgba(255,255,255,0.92);
+      border-radius: var(--card-radius);
+      border: 1.4px solid #e6e9ee;
+      box-shadow: var(--main-shadow);
+      padding: var(--card-padding);
+      margin-bottom: 10px;
+      transition: box-shadow 0.16s, border 0.14s, padding 0.2s;
+      position: relative;
+    }
+    .card h2 {
+      color: #223056;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    /* === GRAPHIQUE === */
+    .graph-container {
+      position: relative;
+      min-height: 60vh;
+      height: calc(100vh - 270px);
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #chart, #preview-chart {
+      flex: 1 1 auto;
+      min-height: var(--graph-min-height);
+      height: 100%;
+      max-height: var(--graph-max-height);
+      background: #eaf3ff;
+      border-radius: 13px;
+      margin-top: var(--graph-margin-top);
+      box-shadow: 0 2px 18px #c0d7f7a6;
+    }
+    .export-pdf-btn {
+      position: absolute;
+      top: 18px;
+      right: 26px;
+      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
+      color: #1686c1;
+      border: none;
+      border-radius: 9px;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 8px 20px;
+      box-shadow: 0 2px 8px #b8c7f733;
+      cursor: pointer;
+      transition: background 0.18s, color 0.12s;
+      z-index: 10;
+    }
+    .export-pdf-btn:hover {
+      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
+      color: #0e3b4d;
+    }
+
+    .tableau-kpi {
+      width: 100%;
+      border-radius: 13px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.97);
+      box-shadow: 0 2px 11px #adc9ee1e;
+      margin-top: 6px;
+      border: 1.1px solid #e0e0e0;
+    }
+    .tableau-kpi table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 15px;
+    }
+    .tableau-kpi th, .tableau-kpi td {
+      padding: 11px 13px;
+      text-align: left;
+      border-bottom: 1.1px solid #e3effc;
+    }
+    .tableau-kpi th {
+      background: #eaf3ff;
+      color: #2574c5;
+      font-weight: 700;
+      letter-spacing: 0.08px;
+    }
+    .tableau-kpi tr:hover { background: #f5faff; }
+    .btn-main {
+      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
+      color: #2574c5;
+      border-radius: 15px;
+      border: none;
+      font-size: 15.5px;
+      font-weight: 600;
+      padding: 11px 25px;
+      margin-top: 13px;
+      box-shadow: 0 2px 8px #b8c7f733;
+      cursor: pointer;
+      transition: background 0.17s, color 0.13s;
+    }
+    .btn-main:hover, .btn-main:focus {
+      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
+      color: #0e3b4d;
+      outline: none;
+    }
+    .actions-row { display: flex; gap: 12px; align-items: center; }
+    .action-btn {
+      background: #eaf3ff;
+      color: #2574c5;
+      border: 1.2px solid #b4d0f6;
+      border-radius: 8px;
+      padding: 6px 13px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.13s, color 0.12s, border 0.13s;
+    }
+    .action-btn:hover {
+      background: #b4d0f6;
+      color: #0e3b4d;
+      border: 1.2px solid #1686c1;
+    }
+    input, select {
+      padding:7px;
+      border-radius:6px;
+      border:1px solid #b4d0f6;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    label { margin-top:8px; font-size: 15px; }
+
+    @media (max-width: 1100px) {
+      .header, .main {
+        max-width: 98vw;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .header {
+        padding: 0 10px;
+      }
+    }
+    @media (max-width: 900px) {
+      .main { padding: 13px 4vw 28px 4vw;}
+      .header { flex-direction: column; gap: 6px; }
+      .header .logos { gap: 7px; }
+      .header h1 { font-size: 18px; margin: 0 6px; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { min-width: 70px; padding: 11px 1px; width: 70px; }
+      .main-content { margin-left: 70px !important; }
+      .main { padding: 2vw 1vw 20px 1vw; }
+      .card { padding: 10px 2vw; }
+      .header h1 { font-size: 14px; }
+      .header .logos img { height: 25px;}
+      .export-pdf-btn { right: 8px; top: 7px; }
+      #chart, #preview-chart { min-height: 180px;}
+    }
+  </style>
+</head>
+<body>
+  <!-- === SIDEBAR GAUCHE FIXE === -->
+  <div class="sidebar">
+    <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
+    <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
+    <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
+  </div>
+  <div class="main-content">
+    <!-- === HEADER ADAPTABLE === -->
+    <div class="header">
+      <div class="logos">
+        <img src="logo-cesi.png" alt="Logo CESI">
+      </div>
+      <h1>KPI – Projet de fin d’études | Le Méridien Étoile</h1>
+      <div class="logos">
+        <img src="logo-cw.png" alt="Logo C&amp;W">
+        <img src="logo-meridien.png" alt="Logo Le Méridien">
+      </div>
+    </div>
+    <div class="main">
+      <!-- === SECTION GRAPHIQUE PRINCIPALE === -->
+      <div id="graph" class="card section active" style="position:relative;">
+        <h2>Vue Graphique</h2>
+        <label for="kpiSelect">Choisir un KPI :</label>
+        <select id="kpiSelect" onchange="updateGraph()"></select>
+        <button class="export-pdf-btn" onclick="exportPDF()">📤 Export PDF</button>
+        <div class="graph-container">
+          <div id="chart"></div>
+        </div>
+      </div>
+      <!-- === SECTION LISTE DES KPI === -->
+      <div id="list" class="card section">
+        <h2>Liste des KPI</h2>
+        <div class="tableau-kpi">
+          <table id="kpiTable">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Objectif</th>
+                <th>Moyenne</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- === SECTION AJOUT/MODIF AVEC PREVIEW EN DIRECT === -->
+      <div id="add" class="card section">
+        <h2>Ajouter ou modifier un KPI</h2>
+        <div style="display: flex; flex-direction: column; gap: 7px; max-width:400px;">
+          <label for="newKpiName">Nom :</label>
+          <input type="text" id="newKpiName" oninput="previewKPI()">
+          <label for="newKpiObjectif">Objectif :</label>
+          <input type="number" id="newKpiObjectif" oninput="previewKPI()">
+          <label for="weekCount">Nombre de semaines :</label>
+          <input type="number" id="weekCount" value="6" min="1" max="20" onchange="generateInputs(this.value)">
+          <label>Valeurs :</label>
+          <div id="newKpiValues" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;"></div>
+          <button class="btn-main" onclick="addNewKPI()">Valider</button>
+        </div>
+        <!-- Prévisualisation graphique en direct -->
+        <div style="margin-top:24px;">
+          <h3 style="margin:8px 0 0 0; color:#1686c1;">Prévisualisation</h3>
+          <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;">
+            <div id="preview-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // === VARIABLES (rendu initial) ===
+    let weeks = [27, 28, 29, 30, 31, 32];
+    let previewWeeks = weeks.length;
+    let kpiData = {
+      "Écart budget prévisionnel / réalisé (%)": { values: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], objectif: 10 },
+      "Taux de valorisation des devis en moins de 5 jours (%)": { values: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], objectif: 90 },
+      "Montant des avenants sur budget initial (%)": { values: [5.25, 4.32, 4.27, 4.28, 4.46, 4.79], objectif: 5 },
+      "Économie générée par le value engineering (€ ou %)": { values: [9.3, 8.87, 9.84, 8.42, 8.88, 9.1], objectif: 10 },
+      "Taux d'avancement des travaux par rapport au planning (%)": { values: [93.68, 103.56, 85.99, 95.43, 97.77, 81.39], objectif: 100 },
+      "Nombre de chambres livrées dans les délais (%)": { values: [93.32, 80.86, 77.85, 103.04, 103.52, 99.04], objectif: 95 },
+      "Temps moyen de traitement d’un défaut signalé (en jours)": { values: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9], objectif: 2 },
+      "Taux de respect des créneaux horaires bruyants (%)": { values: [81.03, 107.28, 87.76, 99.88, 89.35, 95.6], objectif: 100 },
+      "Taux de levée de réserves au premier passage (%)": { values: [86.76, 76.99, 98.18, 92.93, 97.37, 96.16], objectif: 90 },
+      "Taux de défauts par chambre à la livraison (nb moyen)": { values: [0.98, 1.08, 0.83, 0.86, 0.81, 0.9], objectif: 1 },
+      "Taux de conformité des fiches d’autocontrôle complétées (%)": { values: [85, 90, 93, 98, 94, 96], objectif: 100 },
+      "Nombre de retours client ou exploitant liés à la qualité post-réception": { values: [2, 1, 0, 0, 1, 0], objectif: 0 },
+      "Part des matériaux à faible impact environnemental utilisés (%)": { values: [24.05, 31.34, 30.36, 30.56, 30.94, 24.67], objectif: 30 },
+      "Taux de tri des déchets chantier (%)": { values: [63.53, 58.43, 74.13, 69.09, 62.95, 57.33], objectif: 70 },
+      "Réduction des émissions liées à la logistique (nb livraisons optimisées)": { values: [2.68, 2.69, 3.06, 2.97, 3.2, 2.82], objectif: 3 },
+      "Nombre de solutions éco-conçues intégrées": { values: [2, 3, 3, 4, 4, 5], objectif: 3 }
+    };
+    let currentKPI = Object.keys(kpiData)[0];
+
+    // === AFFICHAGE DES SECTIONS UNIQUEMENT (UNE PAR UNE) ===
+    function showSection(id, btn) {
+      document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
+      if(btn) btn.classList.add("active");
+      if (id === "list") renderTable();
+      if (id === "graph") updateGraph();
+      if (id === "add") prepareAddForm();
+    }
+
+    // === GRAPHIQUE DYNAMIQUE PRINCIPAL ===
+    function updateGraph() {
+      let select = document.getElementById("kpiSelect");
+      select.innerHTML = "";
+      Object.keys(kpiData).forEach(kpi => {
+        let opt = document.createElement("option");
+        opt.value = kpi;
+        opt.text = kpi;
+        select.add(opt);
+      });
+      select.value = currentKPI;
+      let data = kpiData[currentKPI];
+      let suffix = currentKPI.includes('%') ? '%' : '';
+      Plotly.newPlot('chart', [
+        {
+          x: weeks,
+          y: data.values,
+          mode: 'lines+markers',
+          name: 'Mesure',
+          line: {color: '#1686c1', width: 3},
+          marker: {color: '#1686c1', size: 8},
+          hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
+        },
+        {
+          x: weeks,
+          y: weeks.map(() => data.objectif),
+          mode: 'lines',
+          name: 'Objectif',
+          line: {color: '#ffe600', dash: 'dash'},
+          hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
+        }
+      ], {
+        title: {text: currentKPI.toUpperCase(), font: {color: '#1686c1'}},
+        plot_bgcolor: '#eaf3ff',
+        paper_bgcolor: '#eaf3ff',
+        font: {color: '#1686c1'},
+        xaxis: {title: 'Semaine (n°)', tickvals: weeks},
+        yaxis: {title: 'Valeur'},
+        showlegend: true,
+        hovermode: 'x unified',
+        margin: { t: 60, l: 50, r: 30, b: 50 }
+      });
+      select.onchange = function() {
+        currentKPI = select.value;
+        updateGraph();
+      };
+    }
+
+    // === PREVISUALISATION DIRECTE DU KPI EN COURS D'AJOUT/MODIF ===
+    function previewKPI() {
+      const name = document.getElementById("newKpiName").value || "Nouveau KPI";
+      const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
+      const count = parseInt(document.getElementById("weekCount").value) || 6;
+      const x = Array.from({length: count}, (_, i) => 27 + i); // Semaines 27 à ...
+      let values = [];
+      for(let i=0; i<count; i++) {
+        const val = parseFloat(document.getElementById("newVal"+i)?.value);
+        values.push(isNaN(val) ? null : val);
+      }
+      let suffix = name.includes('%') ? '%' : '';
+      Plotly.newPlot('preview-chart', [
+        {
+          x: x,
+          y: values,
+          mode: 'lines+markers',
+          name: 'Mesure',
+          line: {color: '#1686c1', width: 3},
+          marker: {color: '#1686c1', size: 8},
+          hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
+        },
+        {
+          x: x,
+          y: x.map(() => objectif),
+          mode: 'lines',
+          name: 'Objectif',
+          line: {color: '#ffe600', dash: 'dash'},
+          hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
+        }
+      ], {
+        title: {text: name.toUpperCase(), font: {color: '#1686c1'}},
+        plot_bgcolor: '#eaf3ff',
+        paper_bgcolor: '#eaf3ff',
+        font: {color: '#1686c1'},
+        xaxis: {title: 'Semaine (n°)', tickvals: x},
+        yaxis: {title: 'Valeur'},
+        showlegend: true,
+        hovermode: 'x unified',
+        margin: { t: 60, l: 50, r: 30, b: 50 }
+      });
+    }
+
+    // === EXPORT PDF GRAPHIQUE PRINCIPAL ===
+    function exportPDF() {
+      const chartDiv = document.getElementById('chart');
+      html2pdf().from(chartDiv).set({
+        filename: 'Graphique_KPI.pdf',
+        margin: 0,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true }
+      }).save();
+    }
+
+    // === AFFICHAGE TABLEAU LISTE DES KPI ===
+    function renderTable() {
+      const kpiTable = document.querySelector("#kpiTable tbody");
+      kpiTable.innerHTML = "";
+      for (let kpi in kpiData) {
+        const tr = document.createElement("tr");
+        const objectif = kpiData[kpi].objectif;
+        const avg = (kpiData[kpi].values.reduce((a,b)=>a+b,0)/kpiData[kpi].values.length).toFixed(2);
+        const unit = kpi.includes('%') ? '%' : kpi.includes('€') ? '€' : (kpi.includes('jours') ? 'j' : '');
+        tr.innerHTML = `
+          <td>${kpi}</td>
+          <td>${objectif} ${unit}</td>
+          <td>${avg} ${unit}</td>
+          <td>
+            <div class="actions-row">
+              <button class="action-btn" title="Modifier" onclick="editKPI('${kpi}')">✏️</button>
+              <button class="action-btn" title="Supprimer" onclick="deleteKPI('${kpi}')">🗑️</button>
+              <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi}')">📑</button>
+            </div>
+          </td>
+        `;
+        kpiTable.appendChild(tr);
+      }
+    }
+    function editKPI(name) {
+      const kpi = kpiData[name];
+      showSection('add', document.querySelectorAll('.sb-btn')[2]);
+      document.getElementById("newKpiName").value = name;
+      document.getElementById("newKpiObjectif").value = kpi.objectif;
+      document.getElementById("weekCount").value = kpi.values.length;
+      generateInputs(kpi.values.length, kpi.values);
+      setTimeout(previewKPI, 50);
+    }
+    function deleteKPI(name) {
+      if (confirm("Supprimer le KPI : " + name + " ?")) {
+        delete kpiData[name];
+        renderTable();
+        updateGraph();
+      }
+    }
+    function duplicateKPI(name) {
+      const kpi = kpiData[name];
+      let newName = name + " (copie)";
+      let count = 2;
+      while (kpiData[newName]) {
+        newName = name + " (copie " + count + ")";
+        count++;
+      }
+      kpiData[newName] = { values: [...kpi.values], objectif: kpi.objectif };
+      renderTable();
+    }
+    function addNewKPI() {
+      const name = document.getElementById("newKpiName").value;
+      const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
+      const count = parseInt(document.getElementById("weekCount").value);
+      const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
+      if (!name || isNaN(objectif) || values.some(isNaN)) {
+        alert("Merci de remplir tous les champs.");
+        return;
+      }
+      kpiData[name] = { values: values, objectif: objectif };
+      weeks = Array.from({length: count}, (_, i) => 27 + i);
+      currentKPI = name;
+      renderTable();
+      showSection('list', document.querySelectorAll('.sb-btn')[1]);
+    }
+    function prepareAddForm() {
+      document.getElementById("newKpiName").value = "";
+      document.getElementById("newKpiObjectif").value = "";
+      document.getElementById("weekCount").value = previewWeeks;
+      generateInputs(previewWeeks);
+      setTimeout(previewKPI, 20);
+    }
+    // === INPUTS DYNAMIQUES pour valeurs par semaine ===
+    function generateInputs(count, vals=[]) {
+      previewWeeks = parseInt(count);
+      const container = document.getElementById("newKpiValues");
+      container.innerHTML = "";
+      const startWeek = 27;
+      for (let i = 0; i < count; i++) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "any";
+        input.id = "newVal" + i;
+        input.placeholder = "Semaine " + (startWeek + i);
+        input.style = "padding:7px;border-radius:6px;border:1px solid #b4d0f6;";
+        if(vals[i] !== undefined) input.value = vals[i];
+        input.oninput = previewKPI;
+        container.appendChild(input);
+      }
+      setTimeout(previewKPI, 20);
+    }
+
+    window.onload = function() {
+      renderTable();
+      updateGraph();
+      generateInputs(previewWeeks);
+      previewKPI();
+    };
+  </script>
+</body>
+</html>
