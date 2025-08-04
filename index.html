@@ -77,7 +77,7 @@
       background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
       color: #1686c1;
     }
-    /* Logos verticaux collés en bas */
+    /* Logos en bas du ruban, sans toucher le reste */
     .sidebar-logos {
       display: flex;
       flex-direction: column;
@@ -108,7 +108,7 @@
       background: var(--header-bg);
       backdrop-filter: blur(13px);
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
       padding: 0 var(--header-padding-x);
       min-height: var(--header-min-height);
@@ -116,6 +116,15 @@
       z-index: 20;
       border: 1.2px solid #e6e9ee;
       transition: max-width 0.2s, width 0.2s;
+    }
+    .header .logos {
+      display: flex; align-items: center; gap: 15px;
+    }
+    .header .logos img {
+      height: var(--logo-height);
+      border-radius: 11px;
+      background: #fff;
+      box-shadow: 0 2px 7px #c3def977;
     }
     .header h1 {
       font-size: 23px;
@@ -170,7 +179,9 @@
   </div>
   <div class="main-content">
     <div class="header">
+      <div class="logos"></div>
       <h1>KPI – Projet de fin d’études | Le Méridien Étoile</h1>
+      <div class="logos"></div>
     </div>
     <div class="main">
       <div id="graph" class="card section active" style="position:relative;">
@@ -220,7 +231,6 @@
       </div>
     </div>
   </div>
-
 <!-- Firebase, Plotly, html2pdf déjà chargés -->
 <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
@@ -272,7 +282,6 @@ async function fetchKpiData() {
   }
 }
 
-// --- Ajoute ou met à jour un KPI ---
 async function saveKPI(name, data) {
   let snapshot = await db.collection("kpi").where("nom", "==", name).get();
   let payload = {
@@ -288,8 +297,6 @@ async function saveKPI(name, data) {
   }
   fetchKpiData();
 }
-
-// --- Supprime un KPI ---
 async function deleteKPI(name) {
   if (!confirm("Supprimer le KPI : " + name + " ?")) return;
   let snapshot = await db.collection("kpi").where("nom", "==", name).get();
@@ -299,8 +306,6 @@ async function deleteKPI(name) {
   }
   fetchKpiData();
 }
-
-// --- Duplique un KPI ---
 async function duplicateKPI(name) {
   const kpi = kpiData[name];
   let newName = name + " (copie)";
@@ -317,8 +322,6 @@ async function duplicateKPI(name) {
   });
   fetchKpiData();
 }
-
-// --- Ajout ou modif depuis le formulaire ---
 async function addNewKPI() {
   const name = document.getElementById("newKpiName").value;
   const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
@@ -332,8 +335,6 @@ async function addNewKPI() {
   currentKPI = name;
   showSection('list', document.querySelectorAll('.sb-btn')[1]);
 }
-
-// --- Navigation sidebar ---
 function showSection(id, btn) {
   document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -343,8 +344,6 @@ function showSection(id, btn) {
   if (id === "graph") updateGraph();
   if (id === "add") prepareAddForm();
 }
-
-// --- Graphe principal ---
 function updateGraph() {
   let select = document.getElementById("kpiSelect");
   let chartDiv = document.getElementById("chart");
@@ -400,8 +399,6 @@ function updateGraph() {
     updateGraph();
   };
 }
-
-// --- Preview direct (édition/ajout) ---
 function previewKPI() {
   const name = document.getElementById("newKpiName").value || "Nouveau KPI";
   const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
@@ -443,8 +440,6 @@ function previewKPI() {
     margin: { t: 60, l: 50, r: 30, b: 50 }
   });
 }
-
-// --- Export PDF ---
 function exportPDF() {
   const chartDiv = document.getElementById('chart');
   if (!chartDiv) return;
@@ -455,8 +450,6 @@ function exportPDF() {
     html2canvas: { scale: 2, useCORS: true }
   }).save();
 }
-
-// --- Tableau des KPI ---
 function renderTable() {
   const kpiTable = document.querySelector("#kpiTable tbody");
   if (!kpiTable) return;
@@ -486,7 +479,6 @@ function renderTable() {
     kpiTable.appendChild(tr);
   }
 }
-
 function editKPI(name) {
   const kpi = kpiData[name];
   showSection('add', document.querySelectorAll('.sb-btn')[2]);
@@ -496,7 +488,6 @@ function editKPI(name) {
   generateInputs(kpi.values.length, kpi.values);
   setTimeout(previewKPI, 50);
 }
-
 function prepareAddForm() {
   document.getElementById("newKpiName").value = "";
   document.getElementById("newKpiObjectif").value = "";
@@ -504,7 +495,6 @@ function prepareAddForm() {
   generateInputs(previewWeeks);
   setTimeout(previewKPI, 20);
 }
-
 function generateInputs(count, vals=[]) {
   previewWeeks = parseInt(count);
   const container = document.getElementById("newKpiValues");
@@ -524,7 +514,6 @@ function generateInputs(count, vals=[]) {
   }
   setTimeout(previewKPI, 20);
 }
-
 // --- Bouton d'injection de démo dans le ruban ---
 document.getElementById("injectDemoKPI").onclick = async function() {
   if(!confirm("Cette opération va remplacer tous les KPI par les valeurs de démo ! Continuer ?")) return;
@@ -551,18 +540,13 @@ document.getElementById("injectDemoKPI").onclick = async function() {
     checkHideInjectButton();
   }, 800);
 };
-
-// Cacher le bouton si la base contient déjà des KPI
 async function checkHideInjectButton() {
   let snapshot = await db.collection("kpi").get();
   let btn = document.getElementById("injectDemoKPI");
   if (snapshot.size > 0) btn.style.display = "none";
   else btn.style.display = "";
 }
-
-// --- Init au chargement ---
 window.onload = fetchKpiData;
 </script>
 </body>
 </html>
-
