@@ -289,17 +289,27 @@
 </head>
 <body>
   <div class="sidebar">
-  <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
-  <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
-  <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
-  <button class="sb-btn" id="injectDemoKPI" style="margin-top: 18px; background: #b3e6c1;">✨ Injecter les KPI de démo</button>
-  <div style="flex:1"></div>
-  <div class="logos-side" style="display:flex; flex-direction:column; align-items:center; gap:18px; margin-bottom:8px;">
-    <img src="logo-cesi.png" alt="Logo CESI" style="height:38px; border-radius:7px; background:#fff; box-shadow:0 2px 7px #c3def977;">
-    <img src="logo-cw.png" alt="Logo C&W" style="height:38px; border-radius:7px; background:#fff; box-shadow:0 2px 7px #c3def977;">
-    <img src="logo-meridien.png" alt="Logo Le Méridien" style="height:38px; border-radius:7px; background:#fff; box-shadow:0 2px 7px #c3def977;">
+    <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
+    <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
+    <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
+    <button class="sb-btn" id="injectDemoKPI" style="margin-top: 18px; background: #b3e6c1;">✨ Injecter les KPI de démo</button>
   </div>
-</div>
+  <div class="main-content">
+    <div class="header">
+      <div class="logos"></div>
+      <h1>KPI – Projet de fin d’études | Le Méridien Étoile</h1>
+      <div class="logos"></div>
+    </div>
+    <div class="main">
+      <div id="graph" class="card section active" style="position:relative;">
+        <h2>Vue Graphique</h2>
+        <label for="kpiSelect">Choisir un KPI :</label>
+        <select id="kpiSelect" onchange="updateGraph()"></select>
+        <button class="export-pdf-btn" onclick="exportPDF()">📤 Export PDF</button>
+        <div class="graph-container">
+          <div id="chart"></div>
+        </div>
+      </div>
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
         <div class="tableau-kpi">
