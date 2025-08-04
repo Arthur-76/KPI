@@ -7,8 +7,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    /* ... (le même CSS que précédemment, inchangé) ... */
-    /* Place tout le CSS du message précédent ici */
+    /* --- CSS identique à avant, inchangé --- */
     :root {
       --main-width: 1100px;
       --main-padding-x: 32px;
@@ -389,7 +388,6 @@ async function fetchKpiData() {
     updateGraph();
     generateInputs(previewWeeks);
     previewKPI();
-    // cache le bouton si KPI présents
     checkHideInjectButton();
     console.log("KPI chargés Firestore :", kpiData);
   } catch (e) {
@@ -398,23 +396,65 @@ async function fetchKpiData() {
   }
 }
 
-// --- Sauvegarde des KPI dans Firestore ---
-async function saveKpiData() {
-  try {
-    let snapshot = await db.collection("kpi").get();
-    let batch = db.batch();
-    snapshot.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
-
-    const inserts = Object.entries(kpiData).map(([nom, obj]) =>
-      db.collection("kpi").add({ nom, objectif: obj.objectif, valeurs: obj.values }));
-    await Promise.all(inserts);
-    console.log("KPI sauvegardés Firestore :", kpiData);
-    fetchKpiData();
-  } catch (e) {
-    alert("Erreur de sauvegarde Firestore : " + e);
-    console.error(e);
+// --- Ajoute ou met à jour un KPI ---
+async function saveKPI(name, data) {
+  let snapshot = await db.collection("kpi").where("nom", "==", name).get();
+  if (!snapshot.empty) {
+    await db.collection("kpi").doc(snapshot.docs[0].id).set({
+      nom: name,
+      objectif: data.objectif,
+      valeurs: data.values
+    });
+  } else {
+    await db.collection("kpi").add({
+      nom: name,
+      objectif: data.objectif,
+      valeurs: data.values
+    });
   }
+  fetchKpiData();
+}
+
+// --- Supprime un KPI ---
+async function deleteKPI(name) {
+  if (!confirm("Supprimer le KPI : " + name + " ?")) return;
+  let snapshot = await db.collection("kpi").where("nom", "==", name).get();
+  if (!snapshot.empty) {
+    await db.collection("kpi").doc(snapshot.docs[0].id).delete();
+  }
+  fetchKpiData();
+}
+
+// --- Duplique un KPI ---
+async function duplicateKPI(name) {
+  const kpi = kpiData[name];
+  let newName = name + " (copie)";
+  let count = 2;
+  while (kpiData[newName]) {
+    newName = name + " (copie " + count + ")";
+    count++;
+  }
+  await db.collection("kpi").add({
+    nom: newName,
+    objectif: kpi.objectif,
+    valeurs: [...kpi.values]
+  });
+  fetchKpiData();
+}
+
+// --- Ajout ou modif depuis le formulaire ---
+async function addNewKPI() {
+  const name = document.getElementById("newKpiName").value;
+  const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
+  const count = parseInt(document.getElementById("weekCount").value);
+  const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
+  if (!name || isNaN(objectif) || values.some(isNaN)) {
+    alert("Merci de remplir tous les champs.");
+    return;
+  }
+  await saveKPI(name, { values: values, objectif: objectif });
+  currentKPI = name;
+  showSection('list', document.querySelectorAll('.sb-btn')[1]);
 }
 
 // --- Navigation sidebar ---
@@ -581,46 +621,6 @@ function editKPI(name) {
   setTimeout(previewKPI, 50);
 }
 
-async function deleteKPI(name) {
-  if (confirm("Supprimer le KPI : " + name + " ?")) {
-    delete kpiData[name];
-    currentKPI = Object.keys(kpiData)[0] || null;
-    await saveKpiData();
-    renderTable();
-    updateGraph();
-  }
-}
-
-async function duplicateKPI(name) {
-  const kpi = kpiData[name];
-  let newName = name + " (copie)";
-  let count = 2;
-  while (kpiData[newName]) {
-    newName = name + " (copie " + count + ")";
-    count++;
-  }
-  kpiData[newName] = { values: [...kpi.values], objectif: kpi.objectif };
-  await saveKpiData();
-  renderTable();
-}
-
-async function addNewKPI() {
-  const name = document.getElementById("newKpiName").value;
-  const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
-  const count = parseInt(document.getElementById("weekCount").value);
-  const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
-  if (!name || isNaN(objectif) || values.some(isNaN)) {
-    alert("Merci de remplir tous les champs.");
-    return;
-  }
-  kpiData[name] = { values: values, objectif: objectif };
-  weeks = Array.from({length: count}, (_, i) => 27 + i);
-  currentKPI = name;
-  await saveKpiData();
-  renderTable();
-  showSection('list', document.querySelectorAll('.sb-btn')[1]);
-}
-
 function prepareAddForm() {
   document.getElementById("newKpiName").value = "";
   document.getElementById("newKpiObjectif").value = "";
@@ -629,7 +629,6 @@ function prepareAddForm() {
   setTimeout(previewKPI, 20);
 }
 
-// --- Champs valeurs dynamiques par semaine ---
 function generateInputs(count, vals=[]) {
   previewWeeks = parseInt(count);
   const container = document.getElementById("newKpiValues");
@@ -656,12 +655,12 @@ document.getElementById("injectDemoKPI").onclick = async function() {
   let btn = document.getElementById("injectDemoKPI");
   btn.disabled = true;
   btn.innerText = "Injection en cours...";
-  // 1. Supprime tout
+  // 1. Vide la base
   let snapshot = await db.collection("kpi").get();
   let batch = db.batch();
   snapshot.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
-  // 2. Ajoute 3 KPI de démo seulement
+  // 2. Ajoute 3 KPI de démo
   const demo = [
     { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47] },
     { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19] },
@@ -677,7 +676,7 @@ document.getElementById("injectDemoKPI").onclick = async function() {
   }, 800);
 };
 
-// Optionnel : Cacher le bouton si la base contient déjà des KPI
+// Cacher le bouton si la base contient déjà des KPI
 async function checkHideInjectButton() {
   let snapshot = await db.collection("kpi").get();
   let btn = document.getElementById("injectDemoKPI");
