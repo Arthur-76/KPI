@@ -351,294 +351,271 @@
     </div>
   </div>
   <script>
-    // -------------------------
-    //   Données initiales
-    // -------------------------
-    const STORAGE_KEY = "kpi_dashboard_data_v1";
-    const defaultKpiData = {
-      "Écart budget prévisionnel / réalisé (%)": { values: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], objectif: 10 },
-      "Taux de valorisation des devis en moins de 5 jours (%)": { values: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], objectif: 90 },
-      "Montant des avenants sur budget initial (%)": { values: [5.25, 4.32, 4.27, 4.28, 4.46, 4.79], objectif: 5 },
-      "Économie générée par le value engineering (€ ou %)": { values: [9.3, 8.87, 9.84, 8.42, 8.88, 9.1], objectif: 10 },
-      "Taux d'avancement des travaux par rapport au planning (%)": { values: [93.68, 103.56, 85.99, 95.43, 97.77, 81.39], objectif: 100 },
-      "Nombre de chambres livrées dans les délais (%)": { values: [93.32, 80.86, 77.85, 103.04, 103.52, 99.04], objectif: 95 },
-      "Temps moyen de traitement d’un défaut signalé (en jours)": { values: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9], objectif: 2 },
-      "Taux de respect des créneaux horaires bruyants (%)": { values: [81.03, 107.28, 87.76, 99.88, 89.35, 95.6], objectif: 100 },
-      "Taux de levée de réserves au premier passage (%)": { values: [86.76, 76.99, 98.18, 92.93, 97.37, 96.16], objectif: 90 },
-      "Taux de défauts par chambre à la livraison (nb moyen)": { values: [0.98, 1.08, 0.83, 0.86, 0.81, 0.9], objectif: 1 },
-      "Taux de conformité des fiches d’autocontrôle complétées (%)": { values: [85, 90, 93, 98, 94, 96], objectif: 100 },
-      "Nombre de retours client ou exploitant liés à la qualité post-réception": { values: [2, 1, 0, 0, 1, 0], objectif: 0 },
-      "Part des matériaux à faible impact environnemental utilisés (%)": { values: [24.05, 31.34, 30.36, 30.56, 30.94, 24.67], objectif: 30 },
-      "Taux de tri des déchets chantier (%)": { values: [63.53, 58.43, 74.13, 69.09, 62.95, 57.33], objectif: 70 },
-      "Réduction des émissions liées à la logistique (nb livraisons optimisées)": { values: [2.68, 2.69, 3.06, 2.97, 3.2, 2.82], objectif: 3 },
-      "Nombre de solutions éco-conçues intégrées": { values: [2, 3, 3, 4, 4, 5], objectif: 3 }
-    };
-    let weeks = [27, 28, 29, 30, 31, 32];
-    let previewWeeks = weeks.length;
-    let kpiData, currentKPI;
+const API_URL = "TON_URL_API_HERE"; // ← remplace par l'URL /exec de ta web app
 
-    // ---------- LocalStorage -----------
-    function loadKpiData() {
-      const str = localStorage.getItem(STORAGE_KEY);
-      if (str) {
-        try {
-          const saved = JSON.parse(str);
-          if (saved && saved.kpiData && Object.keys(saved.kpiData).length > 0) {
-            weeks = saved.weeks || [27, 28, 29, 30, 31, 32];
-            currentKPI = saved.currentKPI || Object.keys(saved.kpiData)[0];
-            return {...saved.kpiData};
-          }
-        } catch (e) {}
-      }
-      // 1ere visite, ou liste vide, on initialise par défaut
-      weeks = [27, 28, 29, 30, 31, 32];
-      currentKPI = Object.keys(defaultKpiData)[0];
-      return {...defaultKpiData};
-    }
-    function saveKpiData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        kpiData,
-        weeks,
-        currentKPI
-      }));
-    }
+let kpiData = {};
+let weeks = [27, 28, 29, 30, 31, 32];
+let previewWeeks = weeks.length;
+let currentKPI = null;
 
-    // ------- Init (toujours au chargement) --------
-    function ensureKpisPresent() {
-      kpiData = loadKpiData();
-      // Si vidé, on restaure toujours la liste initiale
-      if (!kpiData || Object.keys(kpiData).length === 0) {
-        kpiData = {...defaultKpiData};
-        weeks = [27, 28, 29, 30, 31, 32];
-        currentKPI = Object.keys(kpiData)[0];
-        saveKpiData();
-      }
-      if (!currentKPI || !kpiData[currentKPI]) currentKPI = Object.keys(kpiData)[0];
-    }
-    ensureKpisPresent();
+// --- Chargement initial depuis Google Sheets ---
+async function fetchKpiData() {
+  try {
+    const resp = await fetch(API_URL);
+    const json = await resp.json();
+    kpiData = {};
+    json.forEach(row => {
+      kpiData[row.nom] = { objectif: row.objectif, values: row.valeurs };
+    });
+    let first = Object.keys(kpiData)[0];
+    weeks = (first && kpiData[first].values)
+      ? kpiData[first].values.map((_,i) => 27+i)
+      : [27,28,29,30,31,32];
+    previewWeeks = weeks.length;
+    currentKPI = first;
+    renderTable();
+    updateGraph();
+    generateInputs(previewWeeks);
+    previewKPI();
+  } catch (e) {
+    alert("Erreur de chargement des données KPI depuis Google Sheets.\nVérifie l'URL API et les droits !");
+  }
+}
 
-    // --------- Fonctions interface ---------
-    function showSection(id, btn) {
-      document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
-      document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
-      if(btn) btn.classList.add("active");
-      if (id === "list") renderTable();
-      if (id === "graph") updateGraph();
-      if (id === "add") prepareAddForm();
-    }
+// --- Sauvegarde des KPI sur Google Sheets ---
+async function saveKpiData() {
+  const dataArr = Object.entries(kpiData).map(([nom, obj]) => ({
+    nom, objectif: obj.objectif, valeurs: obj.values
+  }));
+  await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "save", data: dataArr }),
+    headers: { "Content-Type": "application/json" }
+  });
+}
 
-    function updateGraph() {
-      let select = document.getElementById("kpiSelect");
-      select.innerHTML = "";
-      let kpis = Object.keys(kpiData);
-      kpis.forEach(kpi => {
-        let opt = document.createElement("option");
-        opt.value = kpi;
-        opt.text = kpi;
-        select.add(opt);
-      });
-      if (!kpis.includes(currentKPI)) currentKPI = kpis[0];
-      select.value = currentKPI;
-      let data = kpiData[currentKPI];
-      let suffix = currentKPI.includes('%') ? '%' : '';
-      Plotly.newPlot('chart', [
-        {
-          x: weeks,
-          y: data.values,
-          mode: 'lines+markers',
-          name: 'Mesure',
-          line: {color: '#1686c1', width: 3},
-          marker: {color: '#1686c1', size: 8},
-          hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
-        },
-        {
-          x: weeks,
-          y: weeks.map(() => data.objectif),
-          mode: 'lines',
-          name: 'Objectif',
-          line: {color: '#ffe600', dash: 'dash'},
-          hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
-        }
-      ], {
-        title: {text: currentKPI.toUpperCase(), font: {color: '#1686c1'}},
-        plot_bgcolor: '#eaf3ff',
-        paper_bgcolor: '#eaf3ff',
-        font: {color: '#1686c1'},
-        xaxis: {title: 'Semaine (n°)', tickvals: weeks},
-        yaxis: {title: 'Valeur'},
-        showlegend: true,
-        hovermode: 'x unified',
-        margin: { t: 60, l: 50, r: 30, b: 50 }
-      });
-      select.onchange = function() {
-        currentKPI = select.value;
-        saveKpiData();
-        updateGraph();
-      };
-    }
+// --- Navigation sidebar ---
+function showSection(id, btn) {
+  document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  if (id === "list") renderTable();
+  if (id === "graph") updateGraph();
+  if (id === "add") prepareAddForm();
+}
 
-    function previewKPI() {
-      const name = document.getElementById("newKpiName").value || "Nouveau KPI";
-      const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
-      const count = parseInt(document.getElementById("weekCount").value) || 6;
-      const x = Array.from({length: count}, (_, i) => 27 + i);
-      let values = [];
-      for(let i=0; i<count; i++) {
-        const val = parseFloat(document.getElementById("newVal"+i)?.value);
-        values.push(isNaN(val) ? null : val);
-      }
-      let suffix = name.includes('%') ? '%' : '';
-      Plotly.newPlot('preview-chart', [
-        {
-          x: x,
-          y: values,
-          mode: 'lines+markers',
-          name: 'Mesure',
-          line: {color: '#1686c1', width: 3},
-          marker: {color: '#1686c1', size: 8},
-          hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
-        },
-        {
-          x: x,
-          y: x.map(() => objectif),
-          mode: 'lines',
-          name: 'Objectif',
-          line: {color: '#ffe600', dash: 'dash'},
-          hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
-        }
-      ], {
-        title: {text: name.toUpperCase(), font: {color: '#1686c1'}},
-        plot_bgcolor: '#eaf3ff',
-        paper_bgcolor: '#eaf3ff',
-        font: {color: '#1686c1'},
-        xaxis: {title: 'Semaine (n°)', tickvals: x},
-        yaxis: {title: 'Valeur'},
-        showlegend: true,
-        hovermode: 'x unified',
-        margin: { t: 60, l: 50, r: 30, b: 50 }
-      });
+// --- Graphe principal ---
+function updateGraph() {
+  let select = document.getElementById("kpiSelect");
+  select.innerHTML = "";
+  let kpis = Object.keys(kpiData);
+  kpis.forEach(kpi => {
+    let opt = document.createElement("option");
+    opt.value = kpi;
+    opt.text = kpi;
+    select.add(opt);
+  });
+  if (!kpis.includes(currentKPI)) currentKPI = kpis[0];
+  select.value = currentKPI;
+  let data = kpiData[currentKPI];
+  let suffix = currentKPI.includes('%') ? '%' : '';
+  Plotly.newPlot('chart', [
+    {
+      x: weeks,
+      y: data.values,
+      mode: 'lines+markers',
+      name: 'Mesure',
+      line: {color: '#1686c1', width: 3},
+      marker: {color: '#1686c1', size: 8},
+      hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
+    },
+    {
+      x: weeks,
+      y: weeks.map(() => data.objectif),
+      mode: 'lines',
+      name: 'Objectif',
+      line: {color: '#ffe600', dash: 'dash'},
+      hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
     }
+  ], {
+    title: {text: currentKPI.toUpperCase(), font: {color: '#1686c1'}},
+    plot_bgcolor: '#eaf3ff',
+    paper_bgcolor: '#eaf3ff',
+    font: {color: '#1686c1'},
+    xaxis: {title: 'Semaine (n°)', tickvals: weeks},
+    yaxis: {title: 'Valeur'},
+    showlegend: true,
+    hovermode: 'x unified',
+    margin: { t: 60, l: 50, r: 30, b: 50 }
+  });
+  select.onchange = function() {
+    currentKPI = select.value;
+    updateGraph();
+  };
+}
 
-    function exportPDF() {
-      const chartDiv = document.getElementById('chart');
-      html2pdf().from(chartDiv).set({
-        filename: 'Graphique_KPI.pdf',
-        margin: 0,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true }
-      }).save();
+// --- Preview direct (édition/ajout) ---
+function previewKPI() {
+  const name = document.getElementById("newKpiName").value || "Nouveau KPI";
+  const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
+  const count = parseInt(document.getElementById("weekCount").value) || 6;
+  const x = Array.from({length: count}, (_, i) => 27 + i);
+  let values = [];
+  for(let i=0; i<count; i++) {
+    const val = parseFloat(document.getElementById("newVal"+i)?.value);
+    values.push(isNaN(val) ? null : val);
+  }
+  let suffix = name.includes('%') ? '%' : '';
+  Plotly.newPlot('preview-chart', [
+    {
+      x: x,
+      y: values,
+      mode: 'lines+markers',
+      name: 'Mesure',
+      line: {color: '#1686c1', width: 3},
+      marker: {color: '#1686c1', size: 8},
+      hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
+    },
+    {
+      x: x,
+      y: x.map(() => objectif),
+      mode: 'lines',
+      name: 'Objectif',
+      line: {color: '#ffe600', dash: 'dash'},
+      hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
     }
+  ], {
+    title: {text: name.toUpperCase(), font: {color: '#1686c1'}},
+    plot_bgcolor: '#eaf3ff',
+    paper_bgcolor: '#eaf3ff',
+    font: {color: '#1686c1'},
+    xaxis: {title: 'Semaine (n°)', tickvals: x},
+    yaxis: {title: 'Valeur'},
+    showlegend: true,
+    hovermode: 'x unified',
+    margin: { t: 60, l: 50, r: 30, b: 50 }
+  });
+}
 
-    function renderTable() {
-      const kpiTable = document.querySelector("#kpiTable tbody");
-      kpiTable.innerHTML = "";
-      let kpis = Object.keys(kpiData);
-      for (let kpi of kpis) {
-        const tr = document.createElement("tr");
-        const objectif = kpiData[kpi].objectif;
-        const avg = (kpiData[kpi].values.reduce((a,b)=>a+b,0)/kpiData[kpi].values.length).toFixed(2);
-        const unit = kpi.includes('%') ? '%' : kpi.includes('€') ? '€' : (kpi.includes('jours') ? 'j' : '');
-        tr.innerHTML = `
-          <td>${kpi}</td>
-          <td>${objectif} ${unit}</td>
-          <td>${avg} ${unit}</td>
-          <td>
-            <div class="actions-row">
-              <button class="action-btn" title="Modifier" onclick="editKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">✏️</button>
-              <button class="action-btn" title="Supprimer" onclick="deleteKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑️</button>
-              <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
-            </div>
-          </td>
-        `;
-        kpiTable.appendChild(tr);
-      }
-    }
-    function editKPI(name) {
-      const kpi = kpiData[name];
-      showSection('add', document.querySelectorAll('.sb-btn')[2]);
-      document.getElementById("newKpiName").value = name;
-      document.getElementById("newKpiObjectif").value = kpi.objectif;
-      document.getElementById("weekCount").value = kpi.values.length;
-      generateInputs(kpi.values.length, kpi.values);
-      setTimeout(previewKPI, 50);
-    }
-    function deleteKPI(name) {
-      if (confirm("Supprimer le KPI : " + name + " ?")) {
-        delete kpiData[name];
-        if (Object.keys(kpiData).length === 0) {
-          // Restaure tous les KPI de base si tout est supprimé
-          kpiData = {...defaultKpiData};
-          weeks = [27, 28, 29, 30, 31, 32];
-          currentKPI = Object.keys(kpiData)[0];
-        } else {
-          currentKPI = Object.keys(kpiData)[0];
-        }
-        saveKpiData();
-        renderTable();
-        updateGraph();
-      }
-    }
-    function duplicateKPI(name) {
-      const kpi = kpiData[name];
-      let newName = name + " (copie)";
-      let count = 2;
-      while (kpiData[newName]) {
-        newName = name + " (copie " + count + ")";
-        count++;
-      }
-      kpiData[newName] = { values: [...kpi.values], objectif: kpi.objectif };
-      saveKpiData();
-      renderTable();
-    }
-    function addNewKPI() {
-      const name = document.getElementById("newKpiName").value;
-      const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
-      const count = parseInt(document.getElementById("weekCount").value);
-      const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
-      if (!name || isNaN(objectif) || values.some(isNaN)) {
-        alert("Merci de remplir tous les champs.");
-        return;
-      }
-      kpiData[name] = { values: values, objectif: objectif };
-      weeks = Array.from({length: count}, (_, i) => 27 + i);
-      currentKPI = name;
-      saveKpiData();
-      renderTable();
-      showSection('list', document.querySelectorAll('.sb-btn')[1]);
-    }
-    function prepareAddForm() {
-      document.getElementById("newKpiName").value = "";
-      document.getElementById("newKpiObjectif").value = "";
-      document.getElementById("weekCount").value = previewWeeks;
-      generateInputs(previewWeeks);
-      setTimeout(previewKPI, 20);
-    }
-    function generateInputs(count, vals=[]) {
-      previewWeeks = parseInt(count);
-      const container = document.getElementById("newKpiValues");
-      container.innerHTML = "";
-      const startWeek = 27;
-      for (let i = 0; i < count; i++) {
-        const input = document.createElement("input");
-        input.type = "number";
-        input.step = "any";
-        input.id = "newVal" + i;
-        input.placeholder = "Semaine " + (startWeek + i);
-        input.style = "padding:7px;border-radius:6px;border:1px solid #b4d0f6;";
-        if(vals[i] !== undefined) input.value = vals[i];
-        input.oninput = previewKPI;
-        container.appendChild(input);
-      }
-      setTimeout(previewKPI, 20);
-    }
-    window.onload = function() {
-      ensureKpisPresent();
-      renderTable();
-      updateGraph();
-      generateInputs(previewWeeks);
-      previewKPI();
-    };
-  </script>
+// --- Export PDF ---
+function exportPDF() {
+  const chartDiv = document.getElementById('chart');
+  html2pdf().from(chartDiv).set({
+    filename: 'Graphique_KPI.pdf',
+    margin: 0,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true }
+  }).save();
+}
+
+// --- Tableau des KPI ---
+function renderTable() {
+  const kpiTable = document.querySelector("#kpiTable tbody");
+  kpiTable.innerHTML = "";
+  let kpis = Object.keys(kpiData);
+  for (let kpi of kpis) {
+    const tr = document.createElement("tr");
+    const objectif = kpiData[kpi].objectif;
+    const avg = (kpiData[kpi].values.reduce((a,b)=>a+b,0)/kpiData[kpi].values.length).toFixed(2);
+    const unit = kpi.includes('%') ? '%' : kpi.includes('€') ? '€' : (kpi.includes('jours') ? 'j' : '');
+    tr.innerHTML = `
+      <td>${kpi}</td>
+      <td>${objectif} ${unit}</td>
+      <td>${avg} ${unit}</td>
+      <td>
+        <div class="actions-row">
+          <button class="action-btn" title="Modifier" onclick="editKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">✏️</button>
+          <button class="action-btn" title="Supprimer" onclick="deleteKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑️</button>
+          <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
+        </div>
+      </td>
+    `;
+    kpiTable.appendChild(tr);
+  }
+}
+
+function editKPI(name) {
+  const kpi = kpiData[name];
+  showSection('add', document.querySelectorAll('.sb-btn')[2]);
+  document.getElementById("newKpiName").value = name;
+  document.getElementById("newKpiObjectif").value = kpi.objectif;
+  document.getElementById("weekCount").value = kpi.values.length;
+  generateInputs(kpi.values.length, kpi.values);
+  setTimeout(previewKPI, 50);
+}
+
+async function deleteKPI(name) {
+  if (confirm("Supprimer le KPI : " + name + " ?")) {
+    delete kpiData[name];
+    currentKPI = Object.keys(kpiData)[0] || null;
+    await saveKpiData();
+    renderTable();
+    updateGraph();
+  }
+}
+
+async function duplicateKPI(name) {
+  const kpi = kpiData[name];
+  let newName = name + " (copie)";
+  let count = 2;
+  while (kpiData[newName]) {
+    newName = name + " (copie " + count + ")";
+    count++;
+  }
+  kpiData[newName] = { values: [...kpi.values], objectif: kpi.objectif };
+  await saveKpiData();
+  renderTable();
+}
+
+async function addNewKPI() {
+  const name = document.getElementById("newKpiName").value;
+  const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
+  const count = parseInt(document.getElementById("weekCount").value);
+  const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
+  if (!name || isNaN(objectif) || values.some(isNaN)) {
+    alert("Merci de remplir tous les champs.");
+    return;
+  }
+  kpiData[name] = { values: values, objectif: objectif };
+  weeks = Array.from({length: count}, (_, i) => 27 + i);
+  currentKPI = name;
+  await saveKpiData();
+  renderTable();
+  showSection('list', document.querySelectorAll('.sb-btn')[1]);
+}
+
+function prepareAddForm() {
+  document.getElementById("newKpiName").value = "";
+  document.getElementById("newKpiObjectif").value = "";
+  document.getElementById("weekCount").value = previewWeeks;
+  generateInputs(previewWeeks);
+  setTimeout(previewKPI, 20);
+}
+
+// --- Champs valeurs dynamiques par semaine ---
+function generateInputs(count, vals=[]) {
+  previewWeeks = parseInt(count);
+  const container = document.getElementById("newKpiValues");
+  container.innerHTML = "";
+  const startWeek = 27;
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "any";
+    input.id = "newVal" + i;
+    input.placeholder = "Semaine " + (startWeek + i);
+    input.style = "padding:7px;border-radius:6px;border:1px solid #b4d0f6;";
+    if(vals[i] !== undefined) input.value = vals[i];
+    input.oninput = previewKPI;
+    container.appendChild(input);
+  }
+  setTimeout(previewKPI, 20);
+}
+
+// --- Init au chargement ---
+window.onload = fetchKpiData;
+</script>
+
 </body>
 </html>
