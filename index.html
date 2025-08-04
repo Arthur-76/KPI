@@ -2,12 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>KPI Dashboard – Firebase</title>
+  <title>KPI Dashboard – Firebase Sécurisé</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    /* --- CSS identique à avant, inchangé --- */
+    /* ... (CSS identique à avant, non modifié pour compacité) ... */
+    /* ... Reprends exactement ton CSS précédent ... */
     :root {
       --main-width: 1100px;
       --main-padding-x: 32px;
@@ -364,6 +365,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+const ADMIN_KEY = "kpimeridien"; // Clé admin, à modifier ici si besoin
+
 let kpiData = {};
 let weeks = [27, 28, 29, 30, 31, 32];
 let previewWeeks = weeks.length;
@@ -376,6 +379,8 @@ async function fetchKpiData() {
     kpiData = {};
     snapshot.forEach(doc => {
       let d = doc.data();
+      // On enlève la clé admin si elle existe, pour l'affichage
+      if (d.adminKey) delete d.adminKey;
       kpiData[d.nom] = { objectif: d.objectif, values: d.valeurs };
     });
     let first = Object.keys(kpiData)[0];
@@ -399,18 +404,16 @@ async function fetchKpiData() {
 // --- Ajoute ou met à jour un KPI ---
 async function saveKPI(name, data) {
   let snapshot = await db.collection("kpi").where("nom", "==", name).get();
+  let payload = {
+    nom: name,
+    objectif: data.objectif,
+    valeurs: data.values,
+    adminKey: ADMIN_KEY
+  };
   if (!snapshot.empty) {
-    await db.collection("kpi").doc(snapshot.docs[0].id).set({
-      nom: name,
-      objectif: data.objectif,
-      valeurs: data.values
-    });
+    await db.collection("kpi").doc(snapshot.docs[0].id).set(payload);
   } else {
-    await db.collection("kpi").add({
-      nom: name,
-      objectif: data.objectif,
-      valeurs: data.values
-    });
+    await db.collection("kpi").add(payload);
   }
   fetchKpiData();
 }
@@ -420,6 +423,7 @@ async function deleteKPI(name) {
   if (!confirm("Supprimer le KPI : " + name + " ?")) return;
   let snapshot = await db.collection("kpi").where("nom", "==", name).get();
   if (!snapshot.empty) {
+    await db.collection("kpi").doc(snapshot.docs[0].id).set({ adminKey: ADMIN_KEY }, { merge: true });
     await db.collection("kpi").doc(snapshot.docs[0].id).delete();
   }
   fetchKpiData();
@@ -437,7 +441,8 @@ async function duplicateKPI(name) {
   await db.collection("kpi").add({
     nom: newName,
     objectif: kpi.objectif,
-    valeurs: [...kpi.values]
+    valeurs: [...kpi.values],
+    adminKey: ADMIN_KEY
   });
   fetchKpiData();
 }
@@ -660,11 +665,11 @@ document.getElementById("injectDemoKPI").onclick = async function() {
   let batch = db.batch();
   snapshot.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
-  // 2. Ajoute 3 KPI de démo
+  // 2. Ajoute 3 KPI de démo (avec clé admin)
   const demo = [
-    { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47] },
-    { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19] },
-    { nom: "Temps moyen de traitement d’un défaut signalé (en jours)", objectif: 2, valeurs: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9] }
+    { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], adminKey: ADMIN_KEY },
+    { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], adminKey: ADMIN_KEY },
+    { nom: "Temps moyen de traitement d’un défaut signalé (en jours)", objectif: 2, valeurs: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9], adminKey: ADMIN_KEY }
   ];
   await Promise.all(demo.map(kpi => db.collection("kpi").add(kpi)));
   btn.innerText = "KPI de démo injectés !";
