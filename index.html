@@ -25,7 +25,6 @@
       --graph-max-height: 65vh;
       --graph-margin-top: 12px;
     }
-
     html, body { height: 100%; }
     body {
       margin: 0;
@@ -36,8 +35,6 @@
       display: flex;
       height: 100vh;
     }
-
-    /* === SIDEBAR GAUCHE FIXE === */
     .sidebar {
       background: linear-gradient(135deg, #eaf3ff 0%, #d8e4fa 100%);
       box-shadow: 4px 0 22px #c5d6f7a0;
@@ -80,8 +77,6 @@
       background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
       color: #1686c1;
     }
-
-    /* === HEADER/RUBAN PRINCIPAL CENTRÉ & ADAPTABLE === */
     .header, .main {
       max-width: var(--main-width);
       width: 100%;
@@ -124,8 +119,6 @@
       line-height: 1.2;
       word-break: break-word;
     }
-
-    /* === ZONE CENTRALE (MODULABLE) === */
     .main {
       padding: 0 var(--main-padding-x) 38px var(--main-padding-x);
       display: flex;
@@ -134,16 +127,11 @@
       min-height: 100vh;
       box-sizing: border-box;
       transition: max-width 0.2s, width 0.2s, padding 0.2s;
-      /* margin-left supprimé ici ! */
     }
-
-    /* Décale le conteneur principal à droite du ruban */
     .main-content {
       margin-left: 240px;
       flex:1; display: flex; flex-direction: column; min-height: 100vh;
     }
-
-    /* === CARDS/SECTIONS === */
     .card.section { display: none; }
     .card.section.active { display: block; margin-top: 0; }
     .card {
@@ -162,8 +150,6 @@
       font-weight: 700;
       margin-bottom: 14px;
     }
-
-    /* === GRAPHIQUE === */
     .graph-container {
       position: relative;
       min-height: 60vh;
@@ -203,7 +189,6 @@
       background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
       color: #0e3b4d;
     }
-
     .tableau-kpi {
       width: 100%;
       border-radius: 13px;
@@ -272,7 +257,6 @@
       font-size: 15px;
     }
     label { margin-top:8px; font-size: 15px; }
-
     @media (max-width: 1100px) {
       .header, .main {
         max-width: 98vw;
@@ -302,14 +286,12 @@
   </style>
 </head>
 <body>
-  <!-- === SIDEBAR GAUCHE FIXE === -->
   <div class="sidebar">
     <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
     <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
     <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
   </div>
   <div class="main-content">
-    <!-- === HEADER ADAPTABLE === -->
     <div class="header">
       <div class="logos">
         <img src="logo-cesi.png" alt="Logo CESI">
@@ -321,7 +303,6 @@
       </div>
     </div>
     <div class="main">
-      <!-- === SECTION GRAPHIQUE PRINCIPALE === -->
       <div id="graph" class="card section active" style="position:relative;">
         <h2>Vue Graphique</h2>
         <label for="kpiSelect">Choisir un KPI :</label>
@@ -331,7 +312,6 @@
           <div id="chart"></div>
         </div>
       </div>
-      <!-- === SECTION LISTE DES KPI === -->
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
         <div class="tableau-kpi">
@@ -348,7 +328,6 @@
           </table>
         </div>
       </div>
-      <!-- === SECTION AJOUT/MODIF AVEC PREVIEW EN DIRECT === -->
       <div id="add" class="card section">
         <h2>Ajouter ou modifier un KPI</h2>
         <div style="display: flex; flex-direction: column; gap: 7px; max-width:400px;">
@@ -362,7 +341,6 @@
           <div id="newKpiValues" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;"></div>
           <button class="btn-main" onclick="addNewKPI()">Valider</button>
         </div>
-        <!-- Prévisualisation graphique en direct -->
         <div style="margin-top:24px;">
           <h3 style="margin:8px 0 0 0; color:#1686c1;">Prévisualisation</h3>
           <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;">
@@ -373,10 +351,11 @@
     </div>
   </div>
   <script>
-    // === VARIABLES (rendu initial) ===
-    let weeks = [27, 28, 29, 30, 31, 32];
-    let previewWeeks = weeks.length;
-    let kpiData = {
+    // -------------------------
+    //   Données initiales
+    // -------------------------
+    const STORAGE_KEY = "kpi_dashboard_data_v1";
+    const defaultKpiData = {
       "Écart budget prévisionnel / réalisé (%)": { values: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], objectif: 10 },
       "Taux de valorisation des devis en moins de 5 jours (%)": { values: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], objectif: 90 },
       "Montant des avenants sur budget initial (%)": { values: [5.25, 4.32, 4.27, 4.28, 4.46, 4.79], objectif: 5 },
@@ -394,9 +373,51 @@
       "Réduction des émissions liées à la logistique (nb livraisons optimisées)": { values: [2.68, 2.69, 3.06, 2.97, 3.2, 2.82], objectif: 3 },
       "Nombre de solutions éco-conçues intégrées": { values: [2, 3, 3, 4, 4, 5], objectif: 3 }
     };
-    let currentKPI = Object.keys(kpiData)[0];
+    let weeks = [27, 28, 29, 30, 31, 32];
+    let previewWeeks = weeks.length;
+    let kpiData, currentKPI;
 
-    // === AFFICHAGE DES SECTIONS UNIQUEMENT (UNE PAR UNE) ===
+    // ---------- LocalStorage -----------
+    function loadKpiData() {
+      const str = localStorage.getItem(STORAGE_KEY);
+      if (str) {
+        try {
+          const saved = JSON.parse(str);
+          if (saved && saved.kpiData && Object.keys(saved.kpiData).length > 0) {
+            weeks = saved.weeks || [27, 28, 29, 30, 31, 32];
+            currentKPI = saved.currentKPI || Object.keys(saved.kpiData)[0];
+            return {...saved.kpiData};
+          }
+        } catch (e) {}
+      }
+      // 1ere visite, ou liste vide, on initialise par défaut
+      weeks = [27, 28, 29, 30, 31, 32];
+      currentKPI = Object.keys(defaultKpiData)[0];
+      return {...defaultKpiData};
+    }
+    function saveKpiData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        kpiData,
+        weeks,
+        currentKPI
+      }));
+    }
+
+    // ------- Init (toujours au chargement) --------
+    function ensureKpisPresent() {
+      kpiData = loadKpiData();
+      // Si vidé, on restaure toujours la liste initiale
+      if (!kpiData || Object.keys(kpiData).length === 0) {
+        kpiData = {...defaultKpiData};
+        weeks = [27, 28, 29, 30, 31, 32];
+        currentKPI = Object.keys(kpiData)[0];
+        saveKpiData();
+      }
+      if (!currentKPI || !kpiData[currentKPI]) currentKPI = Object.keys(kpiData)[0];
+    }
+    ensureKpisPresent();
+
+    // --------- Fonctions interface ---------
     function showSection(id, btn) {
       document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
       document.getElementById(id).classList.add("active");
@@ -407,16 +428,17 @@
       if (id === "add") prepareAddForm();
     }
 
-    // === GRAPHIQUE DYNAMIQUE PRINCIPAL ===
     function updateGraph() {
       let select = document.getElementById("kpiSelect");
       select.innerHTML = "";
-      Object.keys(kpiData).forEach(kpi => {
+      let kpis = Object.keys(kpiData);
+      kpis.forEach(kpi => {
         let opt = document.createElement("option");
         opt.value = kpi;
         opt.text = kpi;
         select.add(opt);
       });
+      if (!kpis.includes(currentKPI)) currentKPI = kpis[0];
       select.value = currentKPI;
       let data = kpiData[currentKPI];
       let suffix = currentKPI.includes('%') ? '%' : '';
@@ -451,16 +473,16 @@
       });
       select.onchange = function() {
         currentKPI = select.value;
+        saveKpiData();
         updateGraph();
       };
     }
 
-    // === PREVISUALISATION DIRECTE DU KPI EN COURS D'AJOUT/MODIF ===
     function previewKPI() {
       const name = document.getElementById("newKpiName").value || "Nouveau KPI";
       const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
       const count = parseInt(document.getElementById("weekCount").value) || 6;
-      const x = Array.from({length: count}, (_, i) => 27 + i); // Semaines 27 à ...
+      const x = Array.from({length: count}, (_, i) => 27 + i);
       let values = [];
       for(let i=0; i<count; i++) {
         const val = parseFloat(document.getElementById("newVal"+i)?.value);
@@ -498,7 +520,6 @@
       });
     }
 
-    // === EXPORT PDF GRAPHIQUE PRINCIPAL ===
     function exportPDF() {
       const chartDiv = document.getElementById('chart');
       html2pdf().from(chartDiv).set({
@@ -509,11 +530,11 @@
       }).save();
     }
 
-    // === AFFICHAGE TABLEAU LISTE DES KPI ===
     function renderTable() {
       const kpiTable = document.querySelector("#kpiTable tbody");
       kpiTable.innerHTML = "";
-      for (let kpi in kpiData) {
+      let kpis = Object.keys(kpiData);
+      for (let kpi of kpis) {
         const tr = document.createElement("tr");
         const objectif = kpiData[kpi].objectif;
         const avg = (kpiData[kpi].values.reduce((a,b)=>a+b,0)/kpiData[kpi].values.length).toFixed(2);
@@ -524,9 +545,9 @@
           <td>${avg} ${unit}</td>
           <td>
             <div class="actions-row">
-              <button class="action-btn" title="Modifier" onclick="editKPI('${kpi}')">✏️</button>
-              <button class="action-btn" title="Supprimer" onclick="deleteKPI('${kpi}')">🗑️</button>
-              <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi}')">📑</button>
+              <button class="action-btn" title="Modifier" onclick="editKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">✏️</button>
+              <button class="action-btn" title="Supprimer" onclick="deleteKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑️</button>
+              <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
             </div>
           </td>
         `;
@@ -545,6 +566,15 @@
     function deleteKPI(name) {
       if (confirm("Supprimer le KPI : " + name + " ?")) {
         delete kpiData[name];
+        if (Object.keys(kpiData).length === 0) {
+          // Restaure tous les KPI de base si tout est supprimé
+          kpiData = {...defaultKpiData};
+          weeks = [27, 28, 29, 30, 31, 32];
+          currentKPI = Object.keys(kpiData)[0];
+        } else {
+          currentKPI = Object.keys(kpiData)[0];
+        }
+        saveKpiData();
         renderTable();
         updateGraph();
       }
@@ -558,6 +588,7 @@
         count++;
       }
       kpiData[newName] = { values: [...kpi.values], objectif: kpi.objectif };
+      saveKpiData();
       renderTable();
     }
     function addNewKPI() {
@@ -572,6 +603,7 @@
       kpiData[name] = { values: values, objectif: objectif };
       weeks = Array.from({length: count}, (_, i) => 27 + i);
       currentKPI = name;
+      saveKpiData();
       renderTable();
       showSection('list', document.querySelectorAll('.sb-btn')[1]);
     }
@@ -582,7 +614,6 @@
       generateInputs(previewWeeks);
       setTimeout(previewKPI, 20);
     }
-    // === INPUTS DYNAMIQUES pour valeurs par semaine ===
     function generateInputs(count, vals=[]) {
       previewWeeks = parseInt(count);
       const container = document.getElementById("newKpiValues");
@@ -601,8 +632,8 @@
       }
       setTimeout(previewKPI, 20);
     }
-
     window.onload = function() {
+      ensureKpisPresent();
       renderTable();
       updateGraph();
       generateInputs(previewWeeks);
