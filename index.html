@@ -32,7 +32,6 @@
       background: linear-gradient(135deg, #eaf3ff 0%, #f8fafb 100%);
       min-height: 100vh;
       color: #223056;
-      display: flex;
       height: 100vh;
     }
     .sidebar {
@@ -118,7 +117,7 @@
       border: 1.2px solid #e6e9ee;
       transition: max-width 0.2s, width 0.2s;
     }
-    .header .logos { display: none; } /* Désactive l’affichage des logos dans l’en-tête */
+    .header .logos { display: none; }
     .header h1 {
       font-size: 23px;
       color: #1686c1;
@@ -130,6 +129,11 @@
       line-height: 1.2;
       word-break: break-word;
     }
+    .main-content {
+      margin-left: 240px;
+      padding-top: 0;
+      flex:1; display: flex; flex-direction: column; min-height: 100vh;
+    }
     .main {
       padding: 0 var(--main-padding-x) 38px var(--main-padding-x);
       display: flex;
@@ -138,10 +142,6 @@
       min-height: 100vh;
       box-sizing: border-box;
       transition: max-width 0.2s, width 0.2s, padding 0.2s;
-    }
-    .main-content {
-      margin-left: 240px;
-      flex:1; display: flex; flex-direction: column; min-height: 100vh;
     }
     .card.section { display: none; }
     .card.section.active { display: block; margin-top: 0; }
@@ -155,7 +155,31 @@
       transition: box-shadow 0.16s, border 0.14s, padding 0.2s;
       position: relative;
     }
-    /* ... reste du CSS inchangé ... */
+    /* ... Ajoute ici tout le reste de ton CSS ... */
+    @media (max-width: 1100px) {
+      .header, .main {
+        max-width: 98vw;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .header {
+        padding: 0 10px;
+      }
+    }
+    @media (max-width: 900px) {
+      .main { padding: 13px 4vw 28px 4vw;}
+      .header { flex-direction: column; gap: 6px; }
+      .header .logos { gap: 7px; }
+      .header h1 { font-size: 18px; margin: 0 6px; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { min-width: 70px; padding: 11px 1px; width: 70px; }
+      .main-content { margin-left: 70px !important; }
+      .main { padding: 2vw 1vw 20px 1vw; }
+      .card { padding: 10px 2vw; }
+      .header h1 { font-size: 14px; }
+      .header .logos img { height: 25px;}
+    }
   </style>
 </head>
 <body>
@@ -175,7 +199,53 @@
       <h1>KPI – Projet de fin d’études | Le Méridien Étoile</h1>
     </div>
     <div class="main">
-      <!-- ... le reste de ton contenu ... -->
+      <div id="graph" class="card section active" style="position:relative;">
+        <h2>Vue Graphique</h2>
+        <label for="kpiSelect">Choisir un KPI :</label>
+        <select id="kpiSelect" onchange="updateGraph()"></select>
+        <button class="export-pdf-btn" onclick="exportPDF()">📤 Export PDF</button>
+        <div class="graph-container">
+          <div id="chart"></div>
+        </div>
+      </div>
+      <div id="list" class="card section">
+        <h2>Liste des KPI</h2>
+        <div class="tableau-kpi">
+          <table id="kpiTable">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Objectif</th>
+                <th>Moyenne</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="add" class="card section">
+        <h2>Ajouter ou modifier un KPI</h2>
+        <div style="display: flex; flex-direction: column; gap: 7px; max-width:400px;">
+          <label for="newKpiName">Nom :</label>
+          <input type="text" id="newKpiName" oninput="previewKPI()">
+          <label for="newKpiObjectif">Objectif :</label>
+          <input type="number" id="newKpiObjectif" oninput="previewKPI()">
+          <label for="weekCount">Nombre de semaines :</label>
+          <input type="number" id="weekCount" value="6" min="1" max="20" onchange="generateInputs(this.value)">
+          <label>Valeurs :</label>
+          <div id="newKpiValues" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;"></div>
+          <button class="btn-main" onclick="addNewKPI()">Valider</button>
+        </div>
+        <div style="margin-top:24px;">
+          <h3 style="margin:8px 0 0 0; color:#1686c1;">Prévisualisation</h3>
+          <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;">
+            <div id="preview-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <!-- Firebase, Plotly, html2pdf déjà chargés -->
 <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -193,7 +263,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const ADMIN_KEY = "kpimeridien"; // Clé admin, à modifier ici si besoin
+const ADMIN_KEY = "kpimeridien"; // Clé admin
 
 let kpiData = {};
 let weeks = [27, 28, 29, 30, 31, 32];
@@ -207,7 +277,6 @@ async function fetchKpiData() {
     kpiData = {};
     snapshot.forEach(doc => {
       let d = doc.data();
-      // On enlève la clé admin si elle existe, pour l'affichage
       if (d.adminKey) delete d.adminKey;
       kpiData[d.nom] = { objectif: d.objectif, values: d.valeurs };
     });
@@ -522,4 +591,3 @@ window.onload = fetchKpiData;
 </script>
 </body>
 </html>
-
