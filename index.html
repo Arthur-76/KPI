@@ -351,7 +351,7 @@
     </div>
   </div>
   <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyjK00Wbo8NShwaLEg1I_Fi55fAn7ytSFL5p7c_92qjV_wIYbiROaABF8J-Uevdb7GZ/exec"; // ← remplace par l'URL /exec de ta web app
+const API_URL = "https://script.google.com/macros/s/AKfycbyjK00Wbo8NShwaLEg1I_Fi55fAn7ytSFL5p7c_92qjV_wIYbiROaABF8J-Uevdb7GZ/exec";
 
 let kpiData = {};
 let weeks = [27, 28, 29, 30, 31, 32];
@@ -362,7 +362,13 @@ let currentKPI = null;
 async function fetchKpiData() {
   try {
     const resp = await fetch(API_URL);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
     const json = await resp.json();
+    console.log("KPI chargés depuis Google Sheets :", json);
+    if (!Array.isArray(json) || !json.length) {
+      alert("Aucun KPI trouvé dans Google Sheets. Vérifie le contenu et le format de la feuille (Nom, Objectif, Valeurs) !");
+      return;
+    }
     kpiData = {};
     json.forEach(row => {
       kpiData[row.nom] = { objectif: row.objectif, values: row.valeurs };
@@ -378,7 +384,8 @@ async function fetchKpiData() {
     generateInputs(previewWeeks);
     previewKPI();
   } catch (e) {
-    alert("Erreur de chargement des données KPI depuis Google Sheets.\nVérifie l'URL API et les droits !");
+    alert("Erreur de chargement des données KPI depuis Google Sheets.\nVérifie l'URL API, les droits et la console !\n" + e);
+    console.error("Erreur fetchKpiData :", e);
   }
 }
 
@@ -387,11 +394,21 @@ async function saveKpiData() {
   const dataArr = Object.entries(kpiData).map(([nom, obj]) => ({
     nom, objectif: obj.objectif, valeurs: obj.values
   }));
-  await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "save", data: dataArr }),
-    headers: { "Content-Type": "application/json" }
-  });
+  try {
+    const resp = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "save", data: dataArr }),
+      headers: { "Content-Type": "application/json" }
+    });
+    const resJson = await resp.json();
+    console.log("Sauvegarde Sheets:", resJson);
+    if (resJson.status !== "success") {
+      alert("Erreur lors de la sauvegarde Google Sheets !");
+    }
+  } catch (e) {
+    alert("Erreur réseau lors de la sauvegarde !\n" + e);
+    console.error("Erreur saveKpiData :", e);
+  }
 }
 
 // --- Navigation sidebar ---
@@ -619,4 +636,3 @@ window.onload = fetchKpiData;
 
 </body>
 </html>
-
