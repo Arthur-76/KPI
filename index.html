@@ -246,6 +246,23 @@
       font-weight: 700;
       letter-spacing: 0.08px;
     }
+    .tableau-kpi th button {
+      background: none;
+      border: none;
+      color: #1686c1;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      outline: none;
+      transition: color 0.14s;
+    }
+    .tableau-kpi th button:focus,
+    .tableau-kpi th button:hover {
+      color: #115b99;
+      text-decoration: underline;
+    }
     .tableau-kpi tr:hover { background: #f5faff; }
     .btn-main {
       background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
@@ -290,6 +307,27 @@
       box-sizing: border-box;
     }
     label { margin-top:8px; font-size: 15px; }
+    /* Spécifique header compact */
+    #kpi-list-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 9px;
+      margin-top: -8px;
+    }
+    #kpi-list-header > div {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    #kpi-list-header label {
+      margin-bottom: 0 !important;
+      font-size: 14px !important;
+      align-self: flex-start;
+    }
+    #categoryFilterList {
+      margin-top: 0 !important;
+    }
     @media (max-width: 1200px) {
       .header, .main, .main-content { max-width: 100vw; }
     }
@@ -300,6 +338,12 @@
       .header { flex-direction: column; gap: 6px; }
       .header .logos { gap: 7px; }
       .header h1 { font-size: 18px; margin: 0 6px; }
+      #kpi-list-header {
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-start;
+        margin-top: 0;
+      }
     }
     @media (max-width: 700px) {
       .main { padding: 1vw 1vw 10px 1vw; }
@@ -380,20 +424,37 @@
       <!-- SECTION LISTE DES KPI -->
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
-        <div id="categoryManagerList" style="margin:12px 0 20px 0;">
-          <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
-          <div id="categoryList"></div>
-          <div style="display:flex; gap:5px; margin-top:6px;">
-            <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1; font-size:14px; padding:3px 8px;">
-            <button onclick="addCategory()" style="font-size:15px; padding:3px 10px;">+</button>
+        <!-- Bloc header compact -->
+        <div id="kpi-list-header">
+          <div style="display:flex; flex-direction:column; min-width:220px; max-width:400px; flex:2;">
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:0;">
+              <span style="font-size:15px; color:#1686c1; font-weight:600;">Catégories</span>
+              <div id="categoryList" style="margin:0 0 0 7px; flex:1;"></div>
+            </div>
+            <div style="display:flex; gap:5px; align-items:center; margin-top:2px;">
+              <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1; font-size:13.5px; padding:2px 7px;">
+              <button onclick="addCategory()" style="font-size:15px; padding:2px 8px;">+</button>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:6px; flex:1; min-width:200px; max-width:340px; margin-top:0;">
+            <label for="categoryFilterList" style="font-size:14px; white-space:nowrap; margin-bottom:0; margin-top:0; line-height:1.8; align-self:flex-start;">Filtrer :</label>
+            <select id="categoryFilterList" onchange="applyCategoryFilterList()" style="min-width:90px; max-width:160px; font-size:14px; padding:2px 8px; margin-top:0;"></select>
           </div>
         </div>
         <div class="tableau-kpi">
           <table id="kpiTable">
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Catégorie</th>
+                <th>
+                  <button type="button" onclick="sortKpiTable('nom')" aria-label="Trier par nom">
+                    Nom <span id="sort-nom-indicator"></span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" onclick="sortKpiTable('category')" aria-label="Trier par catégorie">
+                    Catégorie <span id="sort-category-indicator"></span>
+                  </button>
+                </th>
                 <th>Objectif</th>
                 <th>Moyenne</th>
                 <th>Actions</th>
@@ -440,9 +501,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
   <script>
-
-
-
 const firebaseConfig = {
   apiKey: "AIzaSyC1bhFobfW4zTIQtAW1mF1j0uphbH1fpuO",
   authDomain: "kpi-eb25b.firebaseapp.com",
@@ -456,16 +514,27 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const ADMIN_KEY = "kpimeridien";
-let kpiData = {};
-let weeks = [27, 28, 29, 30, 31, 32];
-let previewWeeks = weeks.length;
-let currentKPI = null;
-
-// --------- CATEGORIES ---------
+let kpisArray = [];  // tableau des objets { id, nom, objectif, valeurs, category }
 let categories = [];
 let currentCategory = "all";
+let currentKPIIndex = 0; // index du KPI sélectionné (pour le graphe, l’édition)
+let editingKPIId = null;
 
-// Charger les catégories depuis Firestore
+// -- Variables de tri --
+let kpiSortField = null;      // 'nom' ou 'category'
+let kpiSortAsc = true;        // true: asc, false: desc
+
+function sortKpiTable(field) {
+  if (kpiSortField === field) {
+    kpiSortAsc = !kpiSortAsc; // inverse le sens si on clique 2x
+  } else {
+    kpiSortField = field;
+    kpiSortAsc = true;
+  }
+  renderTable();
+}
+
+// CATEGORIES
 async function fetchCategories() {
   let snapshot = await db.collection("categories").get();
   categories = [];
@@ -473,9 +542,8 @@ async function fetchCategories() {
   renderCategoryList();
   renderCategorySelect();
   renderCategoryFilter();
+  renderCategoryFilterList();
 }
-
-// Ajout d'une catégorie depuis la page Liste
 async function addCategory() {
   let name = document.getElementById("newCategoryName").value.trim();
   if (!name) return;
@@ -487,8 +555,6 @@ async function addCategory() {
   document.getElementById("newCategoryName").value = "";
   fetchCategories();
 }
-
-// Ajout d'une catégorie depuis la page Ajout
 async function addCategoryFromAdd() {
   let name = document.getElementById("newCategoryNameAdd").value.trim();
   if (!name) return;
@@ -500,17 +566,12 @@ async function addCategoryFromAdd() {
   document.getElementById("newCategoryNameAdd").value = "";
   fetchCategories();
 }
-
-// Suppression d'une catégorie
 async function deleteCategory(id) {
   if (!confirm("Supprimer cette catégorie ?")) return;
   await db.collection("categories").doc(id).delete();
   fetchCategories();
 }
-
-// Affichage des catégories dans les deux pages
 function renderCategoryList() {
-  // Page Liste
   let divList = document.getElementById("categoryList");
   if(divList) {
     divList.innerHTML = "";
@@ -527,7 +588,6 @@ function renderCategoryList() {
       divList.appendChild(btn);
     }
   }
-  // Page Ajout
   let divAdd = document.getElementById("categoryListAdd");
   if(divAdd) {
     divAdd.innerHTML = "";
@@ -545,8 +605,6 @@ function renderCategoryList() {
     }
   }
 }
-
-// Remplit le select dans le formulaire KPI
 function renderCategorySelect(selected = null) {
   let sel = document.getElementById("newKpiCategory");
   if (!sel) return;
@@ -563,8 +621,6 @@ function renderCategorySelect(selected = null) {
     sel.appendChild(opt);
   }
 }
-
-// Remplit le select du filtre de catégorie
 function renderCategoryFilter() {
   let sel = document.getElementById("categoryFilter");
   if (!sel) return;
@@ -577,109 +633,129 @@ function renderCategoryFilter() {
   }
   sel.value = currentCategory;
 }
-
-// Applique le filtre de catégorie
+// -- Pour la page LISTE
+function renderCategoryFilterList() {
+  let sel = document.getElementById("categoryFilterList");
+  if (!sel) return;
+  sel.innerHTML = "<option value='all'>Toutes</option>";
+  for (let cat of categories) {
+    let opt = document.createElement("option");
+    opt.value = cat.name;
+    opt.textContent = cat.name;
+    sel.appendChild(opt);
+  }
+  sel.value = currentCategory;
+}
+function applyCategoryFilterList() {
+  let sel = document.getElementById("categoryFilterList");
+  currentCategory = sel.value;
+  // Synchronise aussi le filtre de la vue graphique
+  let selGraph = document.getElementById("categoryFilter");
+  if(selGraph) selGraph.value = currentCategory;
+  renderTable();
+  updateGraph();
+}
 function applyCategoryFilter() {
   let sel = document.getElementById("categoryFilter");
   currentCategory = sel.value;
+  let selList = document.getElementById("categoryFilterList");
+  if(selList) selList.value = currentCategory;
   renderTable();
   updateGraph();
 }
 
-// ---------- CHARGEMENT DES KPI ----------
+// KPI CRUD
 async function fetchKpiData() {
   try {
     let snapshot = await db.collection("kpi").get();
-    kpiData = {};
+    kpisArray = [];
     snapshot.forEach(doc => {
       let d = doc.data();
       if (d.adminKey) delete d.adminKey;
-      kpiData[d.nom] = { objectif: d.objectif, values: d.valeurs, category: d.category || "" };
+      kpisArray.push({ id: doc.id, ...d });
     });
-    let first = Object.keys(kpiData)[0];
-    weeks = (first && kpiData[first].values)
-      ? kpiData[first].values.map((_,i) => 27+i)
-      : [27,28,29,30,31,32];
-    previewWeeks = weeks.length;
-    currentKPI = first;
+    currentKPIIndex = 0;
+    editingKPIId = null;
     renderTable();
     updateGraph();
-    generateInputs(previewWeeks);
+    generateInputs(getWeeks().length);
     previewKPI();
     checkHideInjectButton();
     fetchCategories();
-    console.log("KPI chargés Firestore :", kpiData);
   } catch (e) {
     alert("Erreur de chargement Firestore : " + e);
     console.error(e);
   }
 }
-
-// --- Ajoute ou met à jour un KPI ---
-async function saveKPI(name, data) {
-  let snapshot = await db.collection("kpi").where("nom", "==", name).get();
+async function saveKPI(data, docId = null) {
   let payload = {
-    nom: name,
+    nom: data.nom,
     objectif: data.objectif,
-    valeurs: data.values,
+    valeurs: data.valeurs,
     adminKey: ADMIN_KEY,
     category: data.category || ""
   };
-  if (!snapshot.empty) {
-    await db.collection("kpi").doc(snapshot.docs[0].id).set(payload);
+  if (docId) {
+    await db.collection("kpi").doc(docId).set(payload);
   } else {
     await db.collection("kpi").add(payload);
   }
   fetchKpiData();
 }
-
-// --- Supprime un KPI ---
-async function deleteKPI(name) {
-  if (!confirm("Supprimer le KPI : " + name + " ?")) return;
-  let snapshot = await db.collection("kpi").where("nom", "==", name).get();
-  if (!snapshot.empty) {
-    await db.collection("kpi").doc(snapshot.docs[0].id).set({ adminKey: ADMIN_KEY }, { merge: true });
-    await db.collection("kpi").doc(snapshot.docs[0].id).delete();
-  }
+async function deleteKPIById(docId) {
+  if (!confirm("Supprimer ce KPI ?")) return;
+  await db.collection("kpi").doc(docId).delete();
   fetchKpiData();
 }
-
-// --- Duplique un KPI ---
+function editKPIById(docId) {
+  let idx = kpisArray.findIndex(kpi => kpi.id === docId);
+  if (idx === -1) return;
+  let kpi = kpisArray[idx];
+  showSection('add', document.querySelectorAll('.sb-btn')[2]);
+  document.getElementById("newKpiName").value = kpi.nom;
+  document.getElementById("newKpiObjectif").value = kpi.objectif;
+  document.getElementById("weekCount").value = kpi.valeurs.length;
+  generateInputs(kpi.valeurs.length, kpi.valeurs);
+  renderCategorySelect(kpi.category || "");
+  editingKPIId = docId;
+  currentKPIIndex = idx;
+  setTimeout(previewKPI, 50);
+}
 async function duplicateKPI(name) {
-  const kpi = kpiData[name];
-  let newName = name + " (copie)";
+  let kpi = kpisArray.find(k => k.nom === name);
+  if (!kpi) return;
+  let baseName = name.replace(/\s*\(copie.*\)$/,"");
+  let newName = baseName + " (copie)";
   let count = 2;
-  while (kpiData[newName]) {
-    newName = name + " (copie " + count + ")";
+  while (kpisArray.find(k => k.nom === newName)) {
+    newName = baseName + " (copie " + count + ")";
     count++;
   }
   await db.collection("kpi").add({
     nom: newName,
     objectif: kpi.objectif,
-    valeurs: [...kpi.values],
+    valeurs: [...kpi.valeurs],
     category: kpi.category || "",
     adminKey: ADMIN_KEY
   });
   fetchKpiData();
 }
-
-// --- Ajout ou modif depuis le formulaire ---
 async function addNewKPI() {
-  const name = document.getElementById("newKpiName").value;
+  const nom = document.getElementById("newKpiName").value;
   const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
   const count = parseInt(document.getElementById("weekCount").value);
   const category = document.getElementById("newKpiCategory").value;
-  const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
-  if (!name || isNaN(objectif) || values.some(isNaN)) {
+  const valeurs = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
+  if (!nom || isNaN(objectif) || valeurs.some(isNaN)) {
     alert("Merci de remplir tous les champs.");
     return;
   }
-  await saveKPI(name, { values: values, objectif: objectif, category: category });
-  currentKPI = name;
+  await saveKPI({ nom, objectif, valeurs, category }, editingKPIId);
   showSection('list', document.querySelectorAll('.sb-btn')[1]);
+  editingKPIId = null;
 }
 
-// --- Navigation sidebar ---
+// NAVIGATION
 function showSection(id, btn) {
   document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -689,34 +765,48 @@ function showSection(id, btn) {
   if (id === "graph") updateGraph();
   if (id === "add") prepareAddForm();
 }
+function prepareAddForm() {
+  document.getElementById("newKpiName").value = "";
+  document.getElementById("newKpiObjectif").value = "";
+  document.getElementById("weekCount").value = getWeeks().length;
+  generateInputs(getWeeks().length);
+  renderCategorySelect();
+  editingKPIId = null;
+  setTimeout(previewKPI, 20);
+}
+function getWeeks() {
+  // On utilise la longueur des semaines du premier KPI si existant
+  if (kpisArray.length && kpisArray[0].valeurs)
+    return kpisArray[0].valeurs.map((_,i) => 27+i);
+  return [27,28,29,30,31,32];
+}
 
-// --- Graphe principal ---
+// GRAPHIQUE
 function updateGraph() {
   let select = document.getElementById("kpiSelect");
   let chartDiv = document.getElementById("chart");
   if (!select || !chartDiv) return;
   select.innerHTML = "";
-  let kpis = Object.keys(kpiData)
-    .filter(kpi => currentCategory === "all" || (kpiData[kpi].category || "") === currentCategory);
-  if (kpis.length === 0) {
+  let filtered = kpisArray.filter(kpi => currentCategory === "all" || (kpi.category || "") === currentCategory);
+  if (filtered.length === 0) {
     chartDiv.innerHTML = "<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>";
     return;
   }
-  kpis.forEach(kpi => {
+  filtered.forEach((kpi, idx) => {
     let opt = document.createElement("option");
-    opt.value = kpi;
-    opt.text = kpi;
+    opt.value = idx;
+    opt.text = kpi.nom;
     select.add(opt);
   });
-  if (!kpis.includes(currentKPI)) currentKPI = kpis[0];
-  select.value = currentKPI;
-  let data = kpiData[currentKPI];
-  if (!data) return;
-  let suffix = currentKPI && currentKPI.includes('%') ? '%' : '';
+  if (currentKPIIndex >= filtered.length) currentKPIIndex = 0;
+  select.value = currentKPIIndex;
+  let data = filtered[currentKPIIndex];
+  let weeks = data.valeurs.map((_,i) => 27+i);
+  let suffix = data.nom && data.nom.includes('%') ? '%' : '';
   Plotly.newPlot('chart', [
     {
       x: weeks,
-      y: data.values,
+      y: data.valeurs,
       mode: 'lines+markers',
       name: 'Mesure',
       line: {color: '#1686c1', width: 3},
@@ -732,7 +822,7 @@ function updateGraph() {
       hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
     }
   ], {
-    title: {text: currentKPI.toUpperCase(), font: {color: '#1686c1'}},
+    title: {text: data.nom.toUpperCase(), font: {color: '#1686c1'}},
     plot_bgcolor: '#eaf3ff',
     paper_bgcolor: '#eaf3ff',
     font: {color: '#1686c1'},
@@ -743,27 +833,25 @@ function updateGraph() {
     margin: { t: 60, l: 50, r: 30, b: 50 }
   });
   select.onchange = function() {
-    currentKPI = select.value;
+    currentKPIIndex = parseInt(select.value);
     updateGraph();
   };
 }
-
-// --- Preview direct (édition/ajout) ---
 function previewKPI() {
-  const name = document.getElementById("newKpiName").value || "Nouveau KPI";
+  const nom = document.getElementById("newKpiName").value || "Nouveau KPI";
   const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
   const count = parseInt(document.getElementById("weekCount").value) || 6;
   const x = Array.from({length: count}, (_, i) => 27 + i);
-  let values = [];
+  let valeurs = [];
   for(let i=0; i<count; i++) {
     const val = parseFloat(document.getElementById("newVal"+i)?.value);
-    values.push(isNaN(val) ? null : val);
+    valeurs.push(isNaN(val) ? null : val);
   }
-  let suffix = name.includes('%') ? '%' : '';
+  let suffix = nom.includes('%') ? '%' : '';
   Plotly.newPlot('preview-chart', [
     {
       x: x,
-      y: values,
+      y: valeurs,
       mode: 'lines+markers',
       name: 'Mesure',
       line: {color: '#1686c1', width: 3},
@@ -779,7 +867,7 @@ function previewKPI() {
       hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
     }
   ], {
-    title: {text: name.toUpperCase(), font: {color: '#1686c1'}},
+    title: {text: nom.toUpperCase(), font: {color: '#1686c1'}},
     plot_bgcolor: '#eaf3ff',
     paper_bgcolor: '#eaf3ff',
     font: {color: '#1686c1'},
@@ -790,8 +878,6 @@ function previewKPI() {
     margin: { t: 60, l: 50, r: 30, b: 50 }
   });
 }
-
-// --- Export PDF ---
 function exportPDF() {
   const chartDiv = document.getElementById('chart');
   if (!chartDiv) return;
@@ -803,61 +889,56 @@ function exportPDF() {
   }).save();
 }
 
-// --- Tableau des KPI ---
+// -- TABLE KPI (avec tri) --
 function renderTable() {
   const kpiTable = document.querySelector("#kpiTable tbody");
   if (!kpiTable) return;
   kpiTable.innerHTML = "";
-  let kpis = Object.keys(kpiData)
-    .filter(kpi => currentCategory === "all" || (kpiData[kpi].category || "") === currentCategory);
-  if (kpis.length === 0) {
+  let filtered = kpisArray.filter(kpi => currentCategory === "all" || (kpi.category || "") === currentCategory);
+
+  // -- Tri par champ si demandé --
+  if (kpiSortField) {
+    filtered.sort((a, b) => {
+      let va = (kpiSortField === "category" ? (a.category || "Non classé") : a.nom).toLowerCase();
+      let vb = (kpiSortField === "category" ? (b.category || "Non classé") : b.nom).toLowerCase();
+      if (va < vb) return kpiSortAsc ? -1 : 1;
+      if (va > vb) return kpiSortAsc ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // Affichage de la flèche de tri
+  document.getElementById("sort-nom-indicator").innerHTML =
+    kpiSortField === "nom" ? (kpiSortAsc ? "▲" : "▼") : "";
+  document.getElementById("sort-category-indicator").innerHTML =
+    kpiSortField === "category" ? (kpiSortAsc ? "▲" : "▼") : "";
+
+  if (filtered.length === 0) {
     kpiTable.innerHTML = "<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>";
     return;
   }
-  for (let kpi of kpis) {
+  for (let kpi of filtered) {
     const tr = document.createElement("tr");
-    const objectif = kpiData[kpi].objectif;
-    const avg = (kpiData[kpi].values.reduce((a,b)=>a+b,0)/kpiData[kpi].values.length).toFixed(2);
-    const unit = kpi.includes('%') ? '%' : kpi.includes('€') ? '€' : (kpi.includes('jours') ? 'j' : '');
+    const objectif = kpi.objectif;
+    const avg = (kpi.valeurs.reduce((a,b)=>a+b,0)/kpi.valeurs.length).toFixed(2);
+    const unit = kpi.nom.includes('%') ? '%' : kpi.nom.includes('€') ? '€' : (kpi.nom.includes('jours') ? 'j' : '');
     tr.innerHTML = `
-      <td>${kpi}</td>
-      <td>${kpiData[kpi].category || "Non classé"}</td>
+      <td>${kpi.nom}</td>
+      <td>${kpi.category || "Non classé"}</td>
       <td>${objectif} ${unit}</td>
       <td>${avg} ${unit}</td>
       <td>
         <div class="actions-row">
-          <button class="action-btn" title="Modifier" onclick="editKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">✏️</button>
-          <button class="action-btn" title="Supprimer" onclick="deleteKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">🗑️</button>
-          <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
+          <button class="action-btn" title="Modifier" onclick="editKPIById('${kpi.id}')">✏️</button>
+          <button class="action-btn" title="Supprimer" onclick="deleteKPIById('${kpi.id}')">🗑️</button>
+          <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.nom.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
         </div>
       </td>
     `;
     kpiTable.appendChild(tr);
   }
 }
-
-function editKPI(name) {
-  const kpi = kpiData[name];
-  showSection('add', document.querySelectorAll('.sb-btn')[2]);
-  document.getElementById("newKpiName").value = name;
-  document.getElementById("newKpiObjectif").value = kpi.objectif;
-  document.getElementById("weekCount").value = kpi.values.length;
-  generateInputs(kpi.values.length, kpi.values);
-  renderCategorySelect(kpi.category || "");
-  setTimeout(previewKPI, 50);
-}
-
-function prepareAddForm() {
-  document.getElementById("newKpiName").value = "";
-  document.getElementById("newKpiObjectif").value = "";
-  document.getElementById("weekCount").value = previewWeeks;
-  generateInputs(previewWeeks);
-  renderCategorySelect();
-  setTimeout(previewKPI, 20);
-}
-
 function generateInputs(count, vals=[]) {
-  previewWeeks = parseInt(count);
   const container = document.getElementById("newKpiValues");
   if (!container) return;
   container.innerHTML = "";
@@ -876,18 +957,16 @@ function generateInputs(count, vals=[]) {
   setTimeout(previewKPI, 20);
 }
 
-// --- Bouton d'injection de démo dans le ruban ---
+// DEMO DATA
 document.getElementById("injectDemoKPI").onclick = async function() {
   if(!confirm("Cette opération va remplacer tous les KPI par les valeurs de démo ! Continuer ?")) return;
   let btn = document.getElementById("injectDemoKPI");
   btn.disabled = true;
   btn.innerText = "Injection en cours...";
-  // 1. Vide la base
   let snapshot = await db.collection("kpi").get();
   let batch = db.batch();
   snapshot.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
-  // 2. Ajoute 3 KPI de démo (avec clé admin)
   const demo = [
     { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], category: "Budget", adminKey: ADMIN_KEY },
     { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], category: "Suivi", adminKey: ADMIN_KEY },
@@ -902,8 +981,6 @@ document.getElementById("injectDemoKPI").onclick = async function() {
     checkHideInjectButton();
   }, 800);
 };
-
-// Cacher le bouton si la base contient déjà des KPI
 async function checkHideInjectButton() {
   let snapshot = await db.collection("kpi").get();
   let btn = document.getElementById("injectDemoKPI");
@@ -911,7 +988,7 @@ async function checkHideInjectButton() {
   else btn.style.display = "";
 }
 
-// --- Init au chargement ---
+// INIT
 window.onload = fetchKpiData;
   </script>
 </body>
