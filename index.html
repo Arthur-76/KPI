@@ -7,27 +7,25 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    /* (Ton CSS reste inchangé, pas besoin de modifier pour ce déplacement) */
     :root {
-      --main-width: 1100px;
-      --main-padding-x: 50px;
+      --main-width: 100vw;
+      --main-padding-x: 18px;
       --main-radius: 22px;
       --main-shadow: 0 6px 24px #8ec6f755;
       --header-bg: rgba(255,255,255,0.88);
-      --header-padding-x: 32px;
-      --main-padding-x: 32px;
+      --header-padding-x: 12px;
       --header-margin-top: 20px;
       --header-margin-bottom: 12px;
       --header-min-height: 70px;
       --logo-height: 44px;
       --main-gap: 26px;
-      --card-padding: 28px 38px 23px 38px;
+      --card-padding: 22px 18px 20px 18px;
       --card-radius: 21px;
       --graph-min-height: 350px;
-      --graph-max-height: 65vh;
+      --graph-max-height: 60vh;
       --graph-margin-top: 12px;
     }
-    html, body { height: 100%; }
+    html, body { height: 100%; padding: 0; margin: 0; box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
@@ -36,16 +34,18 @@
       color: #223056;
       display: flex;
       height: 100vh;
+      width: 100vw;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
     .sidebar {
       background: linear-gradient(135deg, #eaf3ff 0%, #d8e4fa 100%);
       box-shadow: 4px 0 22px #c5d6f7a0;
       border-radius: 0 30px 30px 0;
-      min-width: 210px;
-      max-width: 240px;
-      width: 240px;
-      padding: 21px 17px 22px 17px;
-      padding-bottom: 28px;
+      min-width: 180px;
+      max-width: 200px;
+      width: 200px;
+      padding: 21px 10px 22px 10px;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -54,6 +54,7 @@
       top: 0;
       height: 100vh;
       z-index: 100;
+      box-sizing: border-box;
     }
     .sb-btn {
       background: linear-gradient(90deg, #eaf3ff 0%, #d8e4fa 100%);
@@ -63,12 +64,15 @@
       font-size: 16.5px;
       font-weight: 600;
       margin-bottom: 2px;
-      padding: 13px 23px;
+      padding: 13px 13px;
       display: flex; align-items: center; gap: 13px;
       cursor: pointer;
       transition: box-shadow 0.17s, background 0.18s, color 0.14s;
       outline: none;
       box-shadow: 0 1px 14px #c0d7f7b4;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .sb-btn.active,
     .sb-btn:focus {
@@ -81,9 +85,10 @@
       color: #1686c1;
     }
     .header, .main {
-      max-width: var(--main-width);
-      width: 90%;
+      max-width: calc(100vw - 200px);
+      width: 100%;
       margin: 0 auto;
+      box-sizing: border-box;
     }
     .header {
       margin-top: var(--header-margin-top);
@@ -101,6 +106,7 @@
       z-index: 20;
       border: 1.2px solid #e6e9ee;
       transition: max-width 0.2s, width 0.2s;
+      overflow-x: auto;
     }
     .header .logos {
       display: flex; align-items: center; gap: 15px;
@@ -121,9 +127,18 @@
       letter-spacing: 0.45px;
       line-height: 1.2;
       word-break: break-word;
+      min-width: 0;
+    }
+    .main-content {
+      margin-left: 200px;
+      flex:1; display: flex; flex-direction: column; min-height: 100vh;
+      box-sizing: border-box;
+      width: calc(100vw - 200px);
+      max-width: 100vw;
+      overflow-x: hidden;
     }
     .main {
-      padding: 0 var(--main-padding-x) 38px var(--main-padding-x);
+      padding: 0 10px 18px 10px;
       max-width: 100vw;
       margin: 0 auto;
       display: flex;
@@ -131,27 +146,24 @@
       gap: var(--main-gap);
       min-height: 100vh;
       box-sizing: border-box;
-      transition: max-width 0.2s, width 0.2s, padding 0.2s;
-    }
-    .main-content {
-      margin-left: 240px;
-      flex:1; display: flex; flex-direction: column; min-height: 100vh;
+      overflow-x: hidden;
     }
     .card.section { display: none; }
     .card.section.active { display: block; margin-top: 0; }
-   .card {
-  background: rgba(255,255,255,0.92);
-  border-radius: var(--card-radius);
-  border: 1.4px solid #e6e9ee;
-  box-shadow: var(--main-shadow);
-  padding: var(--card-padding);
-  margin-bottom: 10px;
-  transition: box-shadow 0.16s, border 0.14s, padding 0.2s;
-  position: relative;
-  max-width: 100vw;
-  width: 100%;
-  box-sizing: border-box;
-}
+    .card {
+      background: rgba(255,255,255,0.92);
+      border-radius: var(--card-radius);
+      border: 1.4px solid #e6e9ee;
+      box-shadow: var(--main-shadow);
+      padding: var(--card-padding);
+      margin-bottom: 10px;
+      transition: box-shadow 0.16s, border 0.14s, padding 0.2s;
+      position: relative;
+      max-width: 100%;
+      width: 100%;         
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
     .card h2 {
       color: #223056;
       font-size: 18px;
@@ -166,6 +178,9 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      width: 100%;
+      overflow-x: auto;
+      box-sizing: border-box;
     }
     #chart, #preview-chart {
       flex: 1 1 auto;
@@ -176,11 +191,15 @@
       border-radius: 13px;
       margin-top: var(--graph-margin-top);
       box-shadow: 0 2px 18px #c0d7f7a6;
+      width: 100%;
+      min-width: 340px;
+      box-sizing: border-box;
+      overflow-x: auto;
     }
     .export-pdf-btn {
       position: absolute;
-      top: 659px;
-      right: 49px;
+      top: 18px;
+      right: 26px;
       background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
       color: #1686c1;
       border: none;
@@ -200,21 +219,26 @@
     .tableau-kpi {
       width: 100%;
       border-radius: 13px;
-      overflow: hidden;
+      overflow-x: auto;
       background: rgba(255,255,255,0.97);
       box-shadow: 0 2px 11px #adc9ee1e;
       margin-top: 6px;
       border: 1.1px solid #e0e0e0;
+      box-sizing: border-box;
     }
     .tableau-kpi table {
       border-collapse: collapse;
       width: 100%;
       font-size: 15px;
+      min-width: 550px;
+      max-width: 100%;
+      table-layout: auto;
     }
     .tableau-kpi th, .tableau-kpi td {
       padding: 11px 13px;
       text-align: left;
       border-bottom: 1.1px solid #e3effc;
+      white-space: nowrap;
     }
     .tableau-kpi th {
       background: #eaf3ff;
@@ -263,33 +287,28 @@
       border:1px solid #b4d0f6;
       margin-bottom: 8px;
       font-size: 15px;
+      box-sizing: border-box;
     }
-    label { margin-top:-13px; font-size: 15px; }
-    @media (max-width: 1100px) {
-      .header, .main {
-        max-width: 98vw;
-        padding-left: 8px;
-        padding-right: 8px;
-      }
-      .header {
-        padding: 0 10px;
-      }
+    label { margin-top:8px; font-size: 15px; }
+    @media (max-width: 1200px) {
+      .header, .main, .main-content { max-width: 100vw; }
     }
     @media (max-width: 900px) {
-      .main { padding: 13px 4vw 28px 4vw;}
+      .main { padding: 13px 2vw 18px 2vw;}
+      .main-content { margin-left: 70px !important; width: calc(100vw - 70px);}
+      .sidebar { min-width: 70px; max-width: 70px; width: 70px; }
       .header { flex-direction: column; gap: 6px; }
       .header .logos { gap: 7px; }
       .header h1 { font-size: 18px; margin: 0 6px; }
     }
     @media (max-width: 700px) {
-      .sidebar { min-width: 70px; padding: 11px 1px; width: 70px; }
-      .main-content { margin-left: 70px !important; }
-      .main { padding: 2vw 1vw 20px 1vw; }
-      .card { padding: 10px 2vw; }
+      .main { padding: 1vw 1vw 10px 1vw; }
+      .main-content { margin-left: 0 !important; width: 100vw; }
+      .sidebar { display: none; }
       .header h1 { font-size: 14px; }
       .header .logos img { height: 25px;}
       .export-pdf-btn { right: 8px; top: 7px; }
-      #chart, #preview-chart { min-height: 180px;}
+      #chart, #preview-chart { min-height: 160px;}
     }
     .sidebar-logos {
       display: flex;
@@ -300,7 +319,7 @@
       margin-bottom: 70px;
     }
     .sidebar-logos img {
-      max-width: 200px; width: 200px; height: auto; max-height: 100px;
+      max-width: 140px; width: 140px; height: auto; max-height: 70px;
       border-radius: 10px; background: #fff;
       box-shadow: 0 1px 7px #8ec6f755;
       object-fit: contain; padding: 5px 8px;
@@ -310,7 +329,7 @@
       transform: scale(1.06); box-shadow: 0 3px 13px #8ec6f799;
     }
     .spacer-top { flex: 1 1 1; }
-    .spacer-bottom { flex: 0 0 275px; }
+    .spacer-bottom { flex: 0 0 200px; }
   </style>
 </head>
 <body>
@@ -334,41 +353,33 @@
       <div class="logos"></div>
     </div>
     <div class="main">
-      <!-- ----------------- FILTRE CATEGORIE ------------------ -->
-<div id="graph" class="card section active" style="position:relative; max-width:100vw; width:100%;">
-  <!-- Barre de contrôle alignée -->
-  <div style="
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    padding: 0 32px 12px 32px;
-    flex-wrap: wrap;
-    ">
-
-    <!-- Bloc Choix du KPI -->
-    <div style="display:flex; align-items:center; min-width:250px; flex:2;">
-      <label for="kpiSelect" style="font-weight:600; margin-right:8px; white-space:nowrap;">KPI :</label>
-      <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:180px;"></select>
-
-    <!-- Bloc Filtre Catégorie -->
-    <div style="display:flex; align-items:center; min-width:200px; flex:1;">
-      <label for="categoryFilter" style="margin-right:6px; white-space:nowrap;">Filtrer par catégorie :</label>
-      <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:120px;"></select>
-    </div>
-
-    <!-- Bouton Export PDF -->
-    <button class="export-pdf-btn" onclick="exportPDF()" style="margin-left:20px;">📤 Export PDF</button>
-  </div>
-  <!-- Graphique -->
-  <div class="graph-container" style="padding: 0 12px;">
-    <div id="chart"></div>
-  </div>
-</div>
+      <!-- SECTION GRAPHIQUE -->
+      <div id="graph" class="card section active" style="position:relative;">
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding: 0 10px 12px 10px;
+          flex-wrap: wrap;
+          ">
+          <div style="display:flex; align-items:center; min-width:160px; flex:2;">
+            <label for="kpiSelect" style="font-weight:600; margin-right:8px; white-space:nowrap;">KPI :</label>
+            <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:80px; max-width:220px;"></select>
+          </div>
+          <div style="display:flex; align-items:center; min-width:120px; flex:1;">
+            <label for="categoryFilter" style="margin-right:6px; white-space:nowrap;">Filtrer par catégorie :</label>
+            <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px; max-width:140px;"></select>
+          </div>
+          <button class="export-pdf-btn" onclick="exportPDF()" style="margin-left:8px;">📤 Export PDF</button>
+        </div>
+        <div class="graph-container" style="padding: 0 0px;">
+          <div id="chart"></div>
+        </div>
       </div>
+      <!-- SECTION LISTE DES KPI -->
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
-        <!-- Bloc gestion des catégories DANS LA PAGE LISTE -->
         <div id="categoryManagerList" style="margin:12px 0 20px 0;">
           <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
           <div id="categoryList"></div>
@@ -392,9 +403,9 @@
           </table>
         </div>
       </div>
+      <!-- SECTION AJOUT KPI -->
       <div id="add" class="card section">
         <h2>Ajouter ou modifier un KPI</h2>
-        <!-- Bloc gestion des catégories DANS LA PAGE AJOUT -->
         <div id="categoryManagerAdd" style="margin:12px 0 20px 0;">
           <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
           <div id="categoryListAdd"></div>
@@ -423,13 +434,15 @@
           </div>
         </div>
       </div>
+      <!-- FIN DES SECTIONS -->
     </div>
   </div>
+  <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
+  <script>
 
-<!-- Firebase, Plotly, html2pdf déjà chargés -->
-<script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
-<script>
+
+
 const firebaseConfig = {
   apiKey: "AIzaSyC1bhFobfW4zTIQtAW1mF1j0uphbH1fpuO",
   authDomain: "kpi-eb25b.firebaseapp.com",
@@ -685,9 +698,6 @@ function updateGraph() {
   select.innerHTML = "";
   let kpis = Object.keys(kpiData)
     .filter(kpi => currentCategory === "all" || (kpiData[kpi].category || "") === currentCategory);
-
-  chartDiv.innerHTML = ""; // <-- Ajout ici pour vider avant
-
   if (kpis.length === 0) {
     chartDiv.innerHTML = "<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>";
     return;
@@ -899,11 +909,10 @@ async function checkHideInjectButton() {
   let btn = document.getElementById("injectDemoKPI");
   if (snapshot.size > 0) btn.style.display = "none";
   else btn.style.display = "";
-} 
+}
 
 // --- Init au chargement ---
 window.onload = fetchKpiData;
-</script>
+  </script>
 </body>
 </html>
-
