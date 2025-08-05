@@ -448,7 +448,7 @@ async function addCategory() {
     alert("Catégorie déjà existante.");
     return;
   }
-  await db.collection("categories").add({name});
+  await db.collection("categories").add({name, adminKey: kpimeridien});
   document.getElementById("newCategoryName").value = "";
   fetchCategories();
 }
@@ -461,7 +461,7 @@ async function addCategoryFromAdd() {
     alert("Catégorie déjà existante.");
     return;
   }
-  await db.collection("categories").add({name});
+  await db.collection("categories").add({name, adminKey: kpimeridien});
   document.getElementById("newCategoryNameAdd").value = "";
   fetchCategories();
 }
@@ -881,3 +881,4 @@ window.onload = fetchKpiData;
 </script>
 </body>
 </html>
+
