@@ -7,11 +7,24 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
+    /* (Ton CSS reste inchangé, pas besoin de modifier pour ce déplacement) */
     :root {
-      --sidebar-width: 240px;
-      --main-max-width: 1400px;
-      --main-padding-x: 36px;
+      --main-width: 100vw;
+      --main-padding-x: 32px;
       --main-radius: 22px;
+      --main-shadow: 0 6px 24px #8ec6f755;
+      --header-bg: rgba(255,255,255,0.88);
+      --header-padding-x: 34px;
+      --header-margin-top: 20px;
+      --header-margin-bottom: 12px;
+      --header-min-height: 70px;
+      --logo-height: 44px;
+      --main-gap: 26px;
+      --card-padding: 28px 38px 23px 38px;
+      --card-radius: 21px;
+      --graph-min-height: 350px;
+      --graph-max-height: 65vh;
+      --graph-margin-top: 12px;
     }
     html, body { height: 100%; }
     body {
@@ -24,79 +37,124 @@
       height: 100vh;
     }
     .sidebar {
-      width: var(--sidebar-width);
-      min-width: var(--sidebar-width);
-      max-width: var(--sidebar-width);
       background: linear-gradient(135deg, #eaf3ff 0%, #d8e4fa 100%);
       box-shadow: 4px 0 22px #c5d6f7a0;
       border-radius: 0 30px 30px 0;
+      min-width: 210px;
+      max-width: 240px;
+      width: 240px;
+      padding: 21px 17px 22px 17px;
+      padding-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       position: fixed;
       left: 0;
       top: 0;
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
       z-index: 100;
-      padding: 21px 17px 22px 17px;
     }
-    .main-content {
-      margin-left: var(--sidebar-width);
-      width: calc(100vw - var(--sidebar-width));
-      min-width: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    .sb-btn {
+      background: linear-gradient(90deg, #eaf3ff 0%, #d8e4fa 100%);
+      color: #2574c5;
+      border-radius: 19px;
+      border: none;
+      font-size: 16.5px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      padding: 13px 23px;
+      display: flex; align-items: center; gap: 13px;
+      cursor: pointer;
+      transition: box-shadow 0.17s, background 0.18s, color 0.14s;
+      outline: none;
+      box-shadow: 0 1px 14px #c0d7f7b4;
+    }
+    .sb-btn.active,
+    .sb-btn:focus {
+      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
+      color: #0e3b4d;
+      box-shadow: 0 3px 18px #8ec6f773;
+    }
+    .sb-btn:hover {
+      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
+      color: #1686c1;
     }
     .header, .main {
-      max-width: var(--main-max-width);
+      max-width: var(--main-width);
       width: 100%;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0 auto;
     }
     .header {
-      margin-top: 20px;
-      margin-bottom: 12px;
+      margin-top: var(--header-margin-top);
+      margin-bottom: var(--header-margin-bottom);
       border-radius: var(--main-radius);
-      box-shadow: 0 6px 24px #8ec6f755;
-      background: rgba(255,255,255,0.88);
+      box-shadow: var(--main-shadow);
+      background: var(--header-bg);
       backdrop-filter: blur(13px);
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      padding: 0 34px;
-      min-height: 70px;
+      padding: 0 var(--header-padding-x);
+      min-height: var(--header-min-height);
+      position: relative;
+      z-index: 20;
       border: 1.2px solid #e6e9ee;
+      transition: max-width 0.2s, width 0.2s;
+    }
+    .header .logos {
+      display: flex; align-items: center; gap: 15px;
+    }
+    .header .logos img {
+      height: var(--logo-height);
+      border-radius: 11px;
+      background: #fff;
+      box-shadow: 0 2px 7px #c3def977;
     }
     .header h1 {
       font-size: 23px;
       color: #1686c1;
-      font-weight: 700;
-      margin: 0;
-      text-align: center;
-      letter-spacing: 0.45px;
       flex: 1;
+      text-align: center;
+      font-weight: 700;
+      margin: 0 20px;
+      letter-spacing: 0.45px;
+      line-height: 1.2;
+      word-break: break-word;
     }
     .main {
-      padding: 0 var(--main-padding-x) 38px var(--main-padding-x);
+      padding: 0 36px 38px 36px;
+      max-width: 100vw;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 26px;
+      gap: var(--main-gap);
       min-height: 100vh;
       box-sizing: border-box;
+      transition: max-width 0.2s, width 0.2s, padding 0.2s;
     }
-    .card {
-      background: rgba(255,255,255,0.92);
-      border-radius: 21px;
-      border: 1.4px solid #e6e9ee;
-      box-shadow: 0 6px 24px #8ec6f755;
-      padding: 28px 38px 23px 38px;
-      margin-bottom: 10px;
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      position: relative;
+    .main-content {
+      margin-left: 240px;
+      flex:1; display: flex; flex-direction: column; min-height: 100vh;
+    }
+    .card.section { display: none; }
+    .card.section.active { display: block; margin-top: 0; }
+   .card {
+  background: rgba(255,255,255,0.92);
+  border-radius: var(--card-radius);
+  border: 1.4px solid #e6e9ee;
+  box-shadow: var(--main-shadow);
+  padding: var(--card-padding);
+  margin-bottom: 10px;
+  transition: box-shadow 0.16s, border 0.14s, padding 0.2s;
+  position: relative;
+  max-width: 100vw;
+  width: 100%;         
+}
+    .card h2 {
+      color: #223056;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 14px;
     }
     .graph-container {
       position: relative;
@@ -109,15 +167,18 @@
     }
     #chart, #preview-chart {
       flex: 1 1 auto;
-      min-height: 350px;
+      min-height: var(--graph-min-height);
       height: 100%;
-      max-height: 65vh;
+      max-height: var(--graph-max-height);
       background: #eaf3ff;
       border-radius: 13px;
-      margin-top: 12px;
+      margin-top: var(--graph-margin-top);
       box-shadow: 0 2px 18px #c0d7f7a6;
     }
     .export-pdf-btn {
+      position: absolute;
+      top: 18px;
+      right: 26px;
       background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
       color: #1686c1;
       border: none;
@@ -129,27 +190,125 @@
       cursor: pointer;
       transition: background 0.18s, color 0.12s;
       z-index: 10;
-      margin-left: 18px;
     }
     .export-pdf-btn:hover {
       background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
       color: #0e3b4d;
     }
-    @media (max-width: 1500px) {
-      :root { --main-max-width: 99vw; }
-      .main, .header { max-width: 99vw; }
+    .tableau-kpi {
+      width: 100%;
+      border-radius: 13px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.97);
+      box-shadow: 0 2px 11px #adc9ee1e;
+      margin-top: 6px;
+      border: 1.1px solid #e0e0e0;
+    }
+    .tableau-kpi table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 15px;
+    }
+    .tableau-kpi th, .tableau-kpi td {
+      padding: 11px 13px;
+      text-align: left;
+      border-bottom: 1.1px solid #e3effc;
+    }
+    .tableau-kpi th {
+      background: #eaf3ff;
+      color: #2574c5;
+      font-weight: 700;
+      letter-spacing: 0.08px;
+    }
+    .tableau-kpi tr:hover { background: #f5faff; }
+    .btn-main {
+      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
+      color: #2574c5;
+      border-radius: 15px;
+      border: none;
+      font-size: 15.5px;
+      font-weight: 600;
+      padding: 11px 25px;
+      margin-top: 13px;
+      box-shadow: 0 2px 8px #b8c7f733;
+      cursor: pointer;
+      transition: background 0.17s, color 0.13s;
+    }
+    .btn-main:hover, .btn-main:focus {
+      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
+      color: #0e3b4d;
+      outline: none;
+    }
+    .actions-row { display: flex; gap: 12px; align-items: center; }
+    .action-btn {
+      background: #eaf3ff;
+      color: #2574c5;
+      border: 1.2px solid #b4d0f6;
+      border-radius: 8px;
+      padding: 6px 13px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.13s, color 0.12s, border 0.13s;
+    }
+    .action-btn:hover {
+      background: #b4d0f6;
+      color: #0e3b4d;
+      border: 1.2px solid #1686c1;
+    }
+    input, select {
+      padding:7px;
+      border-radius:6px;
+      border:1px solid #b4d0f6;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    label { margin-top:8px; font-size: 15px; }
+    @media (max-width: 1100px) {
+      .header, .main {
+        max-width: 98vw;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .header {
+        padding: 0 10px;
+      }
     }
     @media (max-width: 900px) {
-      :root { --main-padding-x: 14px; }
-      .main { gap: 12px; }
-      .header h1 { font-size: 17px; }
-      .main, .header { max-width: 100vw; }
+      .main { padding: 13px 4vw 28px 4vw;}
+      .header { flex-direction: column; gap: 6px; }
+      .header .logos { gap: 7px; }
+      .header h1 { font-size: 18px; margin: 0 6px; }
     }
     @media (max-width: 700px) {
-      .sidebar { min-width: 70px; width: 70px; padding: 11px 1px;}
+      .sidebar { min-width: 70px; padding: 11px 1px; width: 70px; }
       .main-content { margin-left: 70px !important; }
-      .main { padding: 0 2vw 18px 2vw;}
+      .main { padding: 2vw 1vw 20px 1vw; }
+      .card { padding: 10px 2vw; }
+      .header h1 { font-size: 14px; }
+      .header .logos img { height: 25px;}
+      .export-pdf-btn { right: 8px; top: 7px; }
+      #chart, #preview-chart { min-height: 180px;}
     }
+    .sidebar-logos {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      margin-top: 50px;
+      margin-bottom: 70px;
+    }
+    .sidebar-logos img {
+      max-width: 200px; width: 200px; height: auto; max-height: 100px;
+      border-radius: 10px; background: #fff;
+      box-shadow: 0 1px 7px #8ec6f755;
+      object-fit: contain; padding: 5px 8px;
+      transition: transform 0.18s;
+    }
+    .sidebar-logos img:hover {
+      transform: scale(1.06); box-shadow: 0 3px 13px #8ec6f799;
+    }
+    .spacer-top { flex: 1 1 1; }
+    .spacer-bottom { flex: 0 0 275px; }
   </style>
 </head>
 <body>
@@ -157,35 +316,54 @@
     <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
     <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
     <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
-    <!-- autres éléments sidebar... -->
+    <button class="sb-btn" id="injectDemoKPI" style="margin-top: 18px; background: #b3e6c1;">✨ Injecter les KPI de démo</button>
+    <div class="spacer-top"></div>
+    <div class="spacer-bottom"></div>
+    <div class="sidebar-logos">
+      <img src="logo-cw.png" alt="Logo Cushman & Wakefield" />
+      <img src="logo-meridien.png" alt="Logo Le Méridien" />
+      <img src="logo-cesi.png" alt="Logo CESI" />
+    </div>
   </div>
   <div class="main-content">
     <div class="header">
+      <div class="logos"></div>
       <h1>KPI – Projet de fin d’études | Le Méridien Étoile</h1>
+      <div class="logos"></div>
     </div>
     <div class="main">
-      <!-- --------- Section GRAPHIQUE --------- -->
-      <div id="graph" class="card section active" style="position:relative;">
-        <div style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 20px;
-          padding-bottom: 18px;
-          flex-wrap: wrap;">
-          <div style="display:flex; align-items:center; min-width:340px; flex:1;">
-            <label for="kpiSelect" style="font-weight:600; margin-right:10px; white-space:nowrap;">KPI :</label>
-            <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:200px; max-width:340px;"></select>
-          </div>
-          <div style="display:flex; align-items:center; min-width:240px; flex:1; justify-content:flex-end;">
-            <label for="categoryFilter" style="margin-right:8px; white-space:nowrap;">Filtrer par catégorie :</label>
-            <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:130px; max-width:220px;"></select>
-          </div>
-          <button class="export-pdf-btn" onclick="exportPDF()">📤 Export PDF</button>
-        </div>
-        <div class="graph-container" style="padding: 0 8px;">
-          <div id="chart"></div>
-        </div>
+      <!-- ----------------- FILTRE CATEGORIE ------------------ -->
+<div id="graph" class="card section active" style="position:relative; max-width:100vw; width:100%;">
+  <!-- Barre de contrôle alignée -->
+  <div style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 0 32px 12px 32px;
+    flex-wrap: wrap;
+    ">
+
+    <!-- Bloc Choix du KPI -->
+    <div style="display:flex; align-items:center; min-width:250px; flex:2;">
+      <label for="kpiSelect" style="font-weight:600; margin-right:8px; white-space:nowrap;">KPI :</label>
+      <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:180px;"></select>
+    </div>
+
+    <!-- Bloc Filtre Catégorie -->
+    <div style="display:flex; align-items:center; min-width:200px; flex:1;">
+      <label for="categoryFilter" style="margin-right:6px; white-space:nowrap;">Filtrer par catégorie :</label>
+      <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:120px;"></select>
+    </div>
+
+    <!-- Bouton Export PDF -->
+    <button class="export-pdf-btn" onclick="exportPDF()" style="margin-left:20px;">📤 Export PDF</button>
+  </div>
+  <!-- Graphique -->
+  <div class="graph-container" style="padding: 0 12px;">
+    <div id="chart"></div>
+  </div>
+</div>
       </div>
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
@@ -724,11 +902,3 @@ window.onload = fetchKpiData;
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
