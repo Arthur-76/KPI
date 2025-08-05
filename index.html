@@ -7,7 +7,6 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-
     :root {
       --main-width: 1100px;
       --main-padding-x: 32px;
@@ -286,37 +285,25 @@
       #chart, #preview-chart { min-height: 180px;}
     }
     .sidebar-logos {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  margin-top: 50px;
-  margin-bottom: 70px;
-}
-
-.sidebar-logos img {
-  max-width: 94px;      /* Largeur max pour chaque logo */
-  width: 94px;
-  height: auto;
-  max-height: 54px;     /* Hauteur max */
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 1px 7px #8ec6f755;
-  object-fit: contain;
-  padding: 5px 8px;
-  transition: transform 0.18s;
-}
-
-.sidebar-logos img:hover {
-  transform: scale(1.06);
-  box-shadow: 0 3px 13px #8ec6f799;
-}
-.spacer-top {
-  flex: 1 1 1;
-}
-.spacer-bottom {
-  flex: 0 0 300px;
-}
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      margin-top: 50px;
+      margin-bottom: 70px;
+    }
+    .sidebar-logos img {
+      max-width: 94px; width: 94px; height: auto; max-height: 54px;
+      border-radius: 10px; background: #fff;
+      box-shadow: 0 1px 7px #8ec6f755;
+      object-fit: contain; padding: 5px 8px;
+      transition: transform 0.18s;
+    }
+    .sidebar-logos img:hover {
+      transform: scale(1.06); box-shadow: 0 3px 13px #8ec6f799;
+    }
+    .spacer-top { flex: 1 1 1; }
+    .spacer-bottom { flex: 0 0 300px; }
   </style>
 </head>
 <body>
@@ -325,11 +312,22 @@
     <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
     <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
     <button class="sb-btn" id="injectDemoKPI" style="margin-top: 18px; background: #b3e6c1;">✨ Injecter les KPI de démo</button>
+    <!-- --------- GESTION DES CATEGORIES --------- -->
+    <div id="categoryManager" style="margin-top:24px;">
+      <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
+      <div id="categoryList"></div>
+      <div style="display:flex; gap:5px; margin-top:6px;">
+        <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1; font-size:14px; padding:3px 8px;">
+        <button onclick="addCategory()" style="font-size:15px; padding:3px 10px;">+</button>
+      </div>
+    </div>
     <div class="spacer-top"></div>
     <div class="spacer-bottom"></div>
-    <img src="logo-cw.png" alt="Logo Cushman & Wakefield" />
-    <img src="logo-meridien.png" alt="Logo Le Méridien" />
-    <img src="logo-cesi.png" alt="Logo CESI" />
+    <div class="sidebar-logos">
+      <img src="logo-cw.png" alt="Logo Cushman & Wakefield" />
+      <img src="logo-meridien.png" alt="Logo Le Méridien" />
+      <img src="logo-cesi.png" alt="Logo CESI" />
+    </div>
   </div>
   <div class="main-content">
     <div class="header">
@@ -338,6 +336,13 @@
       <div class="logos"></div>
     </div>
     <div class="main">
+      <!-- ----------------- FILTRE CATEGORIE ------------------ -->
+      <div style="margin-bottom:10px;">
+        <label for="categoryFilter">Filtrer par catégorie :</label>
+        <select id="categoryFilter" onchange="applyCategoryFilter()">
+          <option value="all">Toutes</option>
+        </select>
+      </div>
       <div id="graph" class="card section active" style="position:relative;">
         <h2>Vue Graphique</h2>
         <label for="kpiSelect">Choisir un KPI :</label>
@@ -354,6 +359,7 @@
             <thead>
               <tr>
                 <th>Nom</th>
+                <th>Catégorie</th>
                 <th>Objectif</th>
                 <th>Moyenne</th>
                 <th>Actions</th>
@@ -366,6 +372,8 @@
       <div id="add" class="card section">
         <h2>Ajouter ou modifier un KPI</h2>
         <div style="display: flex; flex-direction: column; gap: 7px; max-width:400px;">
+          <label for="newKpiCategory">Catégorie :</label>
+          <select id="newKpiCategory"></select>
           <label for="newKpiName">Nom :</label>
           <input type="text" id="newKpiName" oninput="previewKPI()">
           <label for="newKpiObjectif">Objectif :</label>
@@ -402,23 +410,113 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const ADMIN_KEY = "kpimeridien"; // Clé admin, à modifier ici si besoin
-
+const ADMIN_KEY = "kpimeridien";
 let kpiData = {};
 let weeks = [27, 28, 29, 30, 31, 32];
 let previewWeeks = weeks.length;
 let currentKPI = null;
 
-// --- Chargement initial depuis Firestore ---
+// --------- CATEGORIES ---------
+let categories = [];
+let currentCategory = "all";
+
+// Charger les catégories depuis Firestore
+async function fetchCategories() {
+  let snapshot = await db.collection("categories").get();
+  categories = [];
+  snapshot.forEach(doc => categories.push({id: doc.id, name: doc.data().name}));
+  renderCategoryList();
+  renderCategorySelect();
+  renderCategoryFilter();
+}
+
+// Ajout d'une catégorie
+async function addCategory() {
+  let name = document.getElementById("newCategoryName").value.trim();
+  if (!name) return;
+  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+    alert("Catégorie déjà existante.");
+    return;
+  }
+  await db.collection("categories").add({name});
+  document.getElementById("newCategoryName").value = "";
+  fetchCategories();
+}
+
+// Suppression d'une catégorie
+async function deleteCategory(id) {
+  if (!confirm("Supprimer cette catégorie ?")) return;
+  await db.collection("categories").doc(id).delete();
+  fetchCategories();
+}
+
+// Affichage des catégories dans la sidebar
+function renderCategoryList() {
+  let div = document.getElementById("categoryList");
+  div.innerHTML = "";
+  for (let cat of categories) {
+    let span = document.createElement("span");
+    span.textContent = cat.name;
+    span.style = "margin-right:6px;font-size:13px;";
+    let btn = document.createElement("button");
+    btn.textContent = "✕";
+    btn.title = "Supprimer";
+    btn.onclick = () => deleteCategory(cat.id);
+    btn.style = "background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;";
+    div.appendChild(span);
+    div.appendChild(btn);
+  }
+}
+
+// Remplit le select dans le formulaire KPI
+function renderCategorySelect(selected = null) {
+  let sel = document.getElementById("newKpiCategory");
+  if (!sel) return;
+  sel.innerHTML = "";
+  let defaultOpt = document.createElement("option");
+  defaultOpt.value = "";
+  defaultOpt.textContent = "Non classé";
+  sel.appendChild(defaultOpt);
+  for (let cat of categories) {
+    let opt = document.createElement("option");
+    opt.value = cat.name;
+    opt.textContent = cat.name;
+    if (selected && selected === cat.name) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// Remplit le select du filtre de catégorie
+function renderCategoryFilter() {
+  let sel = document.getElementById("categoryFilter");
+  if (!sel) return;
+  sel.innerHTML = "<option value='all'>Toutes</option>";
+  for (let cat of categories) {
+    let opt = document.createElement("option");
+    opt.value = cat.name;
+    opt.textContent = cat.name;
+    sel.appendChild(opt);
+  }
+  sel.value = currentCategory;
+}
+
+// Applique le filtre de catégorie
+function applyCategoryFilter() {
+  let sel = document.getElementById("categoryFilter");
+  currentCategory = sel.value;
+  renderTable();
+  updateGraph();
+}
+
+// ---------- CHARGEMENT DES KPI ----------
 async function fetchKpiData() {
   try {
     let snapshot = await db.collection("kpi").get();
     kpiData = {};
     snapshot.forEach(doc => {
       let d = doc.data();
-      // On enlève la clé admin si elle existe, pour l'affichage
       if (d.adminKey) delete d.adminKey;
-      kpiData[d.nom] = { objectif: d.objectif, values: d.valeurs };
+      kpiData[d.nom] = { objectif: d.objectif, values: d.valeurs, category: d.category || "" };
     });
     let first = Object.keys(kpiData)[0];
     weeks = (first && kpiData[first].values)
@@ -431,6 +529,7 @@ async function fetchKpiData() {
     generateInputs(previewWeeks);
     previewKPI();
     checkHideInjectButton();
+    fetchCategories();
     console.log("KPI chargés Firestore :", kpiData);
   } catch (e) {
     alert("Erreur de chargement Firestore : " + e);
@@ -445,7 +544,8 @@ async function saveKPI(name, data) {
     nom: name,
     objectif: data.objectif,
     valeurs: data.values,
-    adminKey: ADMIN_KEY
+    adminKey: ADMIN_KEY,
+    category: data.category || ""
   };
   if (!snapshot.empty) {
     await db.collection("kpi").doc(snapshot.docs[0].id).set(payload);
@@ -479,6 +579,7 @@ async function duplicateKPI(name) {
     nom: newName,
     objectif: kpi.objectif,
     valeurs: [...kpi.values],
+    category: kpi.category || "",
     adminKey: ADMIN_KEY
   });
   fetchKpiData();
@@ -489,12 +590,13 @@ async function addNewKPI() {
   const name = document.getElementById("newKpiName").value;
   const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
   const count = parseInt(document.getElementById("weekCount").value);
+  const category = document.getElementById("newKpiCategory").value;
   const values = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
   if (!name || isNaN(objectif) || values.some(isNaN)) {
     alert("Merci de remplir tous les champs.");
     return;
   }
-  await saveKPI(name, { values: values, objectif: objectif });
+  await saveKPI(name, { values: values, objectif: objectif, category: category });
   currentKPI = name;
   showSection('list', document.querySelectorAll('.sb-btn')[1]);
 }
@@ -516,7 +618,8 @@ function updateGraph() {
   let chartDiv = document.getElementById("chart");
   if (!select || !chartDiv) return;
   select.innerHTML = "";
-  let kpis = Object.keys(kpiData);
+  let kpis = Object.keys(kpiData)
+    .filter(kpi => currentCategory === "all" || (kpiData[kpi].category || "") === currentCategory);
   if (kpis.length === 0) {
     chartDiv.innerHTML = "<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>";
     return;
@@ -627,9 +730,10 @@ function renderTable() {
   const kpiTable = document.querySelector("#kpiTable tbody");
   if (!kpiTable) return;
   kpiTable.innerHTML = "";
-  let kpis = Object.keys(kpiData);
+  let kpis = Object.keys(kpiData)
+    .filter(kpi => currentCategory === "all" || (kpiData[kpi].category || "") === currentCategory);
   if (kpis.length === 0) {
-    kpiTable.innerHTML = "<tr><td colspan='4' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>";
+    kpiTable.innerHTML = "<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>";
     return;
   }
   for (let kpi of kpis) {
@@ -639,6 +743,7 @@ function renderTable() {
     const unit = kpi.includes('%') ? '%' : kpi.includes('€') ? '€' : (kpi.includes('jours') ? 'j' : '');
     tr.innerHTML = `
       <td>${kpi}</td>
+      <td>${kpiData[kpi].category || "Non classé"}</td>
       <td>${objectif} ${unit}</td>
       <td>${avg} ${unit}</td>
       <td>
@@ -660,6 +765,7 @@ function editKPI(name) {
   document.getElementById("newKpiObjectif").value = kpi.objectif;
   document.getElementById("weekCount").value = kpi.values.length;
   generateInputs(kpi.values.length, kpi.values);
+  renderCategorySelect(kpi.category || "");
   setTimeout(previewKPI, 50);
 }
 
@@ -668,6 +774,7 @@ function prepareAddForm() {
   document.getElementById("newKpiObjectif").value = "";
   document.getElementById("weekCount").value = previewWeeks;
   generateInputs(previewWeeks);
+  renderCategorySelect();
   setTimeout(previewKPI, 20);
 }
 
@@ -704,9 +811,9 @@ document.getElementById("injectDemoKPI").onclick = async function() {
   await batch.commit();
   // 2. Ajoute 3 KPI de démo (avec clé admin)
   const demo = [
-    { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], adminKey: ADMIN_KEY },
-    { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], adminKey: ADMIN_KEY },
-    { nom: "Temps moyen de traitement d’un défaut signalé (en jours)", objectif: 2, valeurs: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9], adminKey: ADMIN_KEY }
+    { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], category: "Budget", adminKey: ADMIN_KEY },
+    { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], category: "Suivi", adminKey: ADMIN_KEY },
+    { nom: "Temps moyen de traitement d’un défaut signalé (en jours)", objectif: 2, valeurs: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9], category: "Qualité", adminKey: ADMIN_KEY }
   ];
   await Promise.all(demo.map(kpi => db.collection("kpi").add(kpi)));
   btn.innerText = "KPI de démo injectés !";
@@ -731,15 +838,3 @@ window.onload = fetchKpiData;
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
