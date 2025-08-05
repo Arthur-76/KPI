@@ -329,20 +329,32 @@
     </div>
     <div class="main">
       <!-- ----------------- FILTRE CATEGORIE ------------------ -->
-      <div style="margin-bottom:10px;">
-        <label for="categoryFilter">Filtrer par catégorie :</label>
-        <select id="categoryFilter" onchange="applyCategoryFilter()">
-          <option value="all">Toutes</option>
-        </select>
-      </div>
-      <div id="graph" class="card section active" style="position:relative;">
-        <h2>Vue Graphique</h2>
-        <label for="kpiSelect">Choisir un KPI :</label>
-        <select id="kpiSelect" onchange="updateGraph()"></select>
-        <button class="export-pdf-btn" onclick="exportPDF()">📤 Export PDF</button>
-        <div class="graph-container">
-          <div id="chart"></div>
-        </div>
+<div id="graph" class="card section active" style="position:relative;">
+
+  <!-- Première ligne : Choix du KPI + Export PDF alignés -->
+  <div style="display: flex; justify-content: flex-end; align-items: center; gap: 22px; margin-bottom: 0;">
+    <div style="flex:1;display:flex;align-items:center;">
+      <label for="kpiSelect" style="font-weight:600;margin-right:8px;">KPI :</label>
+      <select id="kpiSelect" onchange="updateGraph()"></select>
+    </div>
+    <button class="export-pdf-btn" onclick="exportPDF()" style="margin-left:auto;">📤 Export PDF</button>
+  </div>
+
+  <!-- Deuxième ligne : filtre catégorie aligné sous le bouton Export -->
+  <div style="display:flex; justify-content: flex-end; margin-top: 4px; margin-bottom: 14px;">
+    <div>
+      <label for="categoryFilter" style="margin-right:6px;">Filtrer par catégorie :</label>
+      <select id="categoryFilter" onchange="applyCategoryFilter()">
+        <option value="all">Toutes</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Graphique -->
+  <div class="graph-container">
+    <div id="chart"></div>
+  </div>
+</div>
       </div>
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
@@ -881,6 +893,7 @@ window.onload = fetchKpiData;
 </script>
 </body>
 </html>
+
 
 
 
