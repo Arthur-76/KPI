@@ -7,6 +7,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
+    /* (Ton CSS reste inchangé, pas besoin de modifier pour ce déplacement) */
     :root {
       --main-width: 1100px;
       --main-padding-x: 32px;
@@ -312,15 +313,6 @@
     <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
     <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
     <button class="sb-btn" id="injectDemoKPI" style="margin-top: 18px; background: #b3e6c1;">✨ Injecter les KPI de démo</button>
-    <!-- --------- GESTION DES CATEGORIES --------- -->
-    <div id="categoryManager" style="margin-top:24px;">
-      <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
-      <div id="categoryList"></div>
-      <div style="display:flex; gap:5px; margin-top:6px;">
-        <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1; font-size:14px; padding:3px 8px;">
-        <button onclick="addCategory()" style="font-size:15px; padding:3px 10px;">+</button>
-      </div>
-    </div>
     <div class="spacer-top"></div>
     <div class="spacer-bottom"></div>
     <div class="sidebar-logos">
@@ -354,6 +346,15 @@
       </div>
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
+        <!-- Bloc gestion des catégories DANS LA PAGE LISTE -->
+        <div id="categoryManagerList" style="margin:12px 0 20px 0;">
+          <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
+          <div id="categoryList"></div>
+          <div style="display:flex; gap:5px; margin-top:6px;">
+            <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1; font-size:14px; padding:3px 8px;">
+            <button onclick="addCategory()" style="font-size:15px; padding:3px 10px;">+</button>
+          </div>
+        </div>
         <div class="tableau-kpi">
           <table id="kpiTable">
             <thead>
@@ -371,6 +372,15 @@
       </div>
       <div id="add" class="card section">
         <h2>Ajouter ou modifier un KPI</h2>
+        <!-- Bloc gestion des catégories DANS LA PAGE AJOUT -->
+        <div id="categoryManagerAdd" style="margin:12px 0 20px 0;">
+          <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
+          <div id="categoryListAdd"></div>
+          <div style="display:flex; gap:5px; margin-top:6px;">
+            <input type="text" id="newCategoryNameAdd" placeholder="Nouvelle catégorie" style="flex:1; font-size:14px; padding:3px 8px;">
+            <button onclick="addCategoryFromAdd()" style="font-size:15px; padding:3px 10px;">+</button>
+          </div>
+        </div>
         <div style="display: flex; flex-direction: column; gap: 7px; max-width:400px;">
           <label for="newKpiCategory">Catégorie :</label>
           <select id="newKpiCategory"></select>
@@ -430,7 +440,7 @@ async function fetchCategories() {
   renderCategoryFilter();
 }
 
-// Ajout d'une catégorie
+// Ajout d'une catégorie depuis la page Liste
 async function addCategory() {
   let name = document.getElementById("newCategoryName").value.trim();
   if (!name) return;
@@ -443,6 +453,19 @@ async function addCategory() {
   fetchCategories();
 }
 
+// Ajout d'une catégorie depuis la page Ajout
+async function addCategoryFromAdd() {
+  let name = document.getElementById("newCategoryNameAdd").value.trim();
+  if (!name) return;
+  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+    alert("Catégorie déjà existante.");
+    return;
+  }
+  await db.collection("categories").add({name});
+  document.getElementById("newCategoryNameAdd").value = "";
+  fetchCategories();
+}
+
 // Suppression d'une catégorie
 async function deleteCategory(id) {
   if (!confirm("Supprimer cette catégorie ?")) return;
@@ -450,21 +473,41 @@ async function deleteCategory(id) {
   fetchCategories();
 }
 
-// Affichage des catégories dans la sidebar
+// Affichage des catégories dans les deux pages
 function renderCategoryList() {
-  let div = document.getElementById("categoryList");
-  div.innerHTML = "";
-  for (let cat of categories) {
-    let span = document.createElement("span");
-    span.textContent = cat.name;
-    span.style = "margin-right:6px;font-size:13px;";
-    let btn = document.createElement("button");
-    btn.textContent = "✕";
-    btn.title = "Supprimer";
-    btn.onclick = () => deleteCategory(cat.id);
-    btn.style = "background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;";
-    div.appendChild(span);
-    div.appendChild(btn);
+  // Page Liste
+  let divList = document.getElementById("categoryList");
+  if(divList) {
+    divList.innerHTML = "";
+    for (let cat of categories) {
+      let span = document.createElement("span");
+      span.textContent = cat.name;
+      span.style = "margin-right:6px;font-size:13px;";
+      let btn = document.createElement("button");
+      btn.textContent = "✕";
+      btn.title = "Supprimer";
+      btn.onclick = () => deleteCategory(cat.id);
+      btn.style = "background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;";
+      divList.appendChild(span);
+      divList.appendChild(btn);
+    }
+  }
+  // Page Ajout
+  let divAdd = document.getElementById("categoryListAdd");
+  if(divAdd) {
+    divAdd.innerHTML = "";
+    for (let cat of categories) {
+      let span = document.createElement("span");
+      span.textContent = cat.name;
+      span.style = "margin-right:6px;font-size:13px;";
+      let btn = document.createElement("button");
+      btn.textContent = "✕";
+      btn.title = "Supprimer";
+      btn.onclick = () => deleteCategory(cat.id);
+      btn.style = "background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;";
+      divAdd.appendChild(span);
+      divAdd.appendChild(btn);
+    }
   }
 }
 
