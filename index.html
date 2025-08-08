@@ -374,6 +374,13 @@
     }
     .spacer-top { flex: 1 1 1; }
     .spacer-bottom { flex: 0 0 200px; }
+
+#kpiSelect {
+  min-width: 350px !important;
+  max-width: 440px !important;
+  font-size: 16px;
+}
+
   </style>
 </head>
 <body>
@@ -407,10 +414,11 @@
           padding: 0 10px 12px 10px;
           flex-wrap: wrap;
           ">
-          <div style="display:flex; align-items:center; min-width:160px; flex:2;">
-            <label for="kpiSelect" style="font-weight:600; margin-right:8px; white-space:nowrap;">KPI :</label>
-            <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:80px; max-width:220px;"></select>
-          </div>
+          <div style="display:flex; align-items:center; min-width:300px; flex:2;">
+  <label for="kpiSelect" style="font-weight:600; margin-right:8px; white-space:nowrap;">KPI :</label>
+  <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:350px; max-width:440px; font-size:16px;"></select>
+</div>
+
           <div style="display:flex; align-items:center; min-width:120px; flex:1;">
             <label for="categoryFilter" style="margin-right:6px; white-space:nowrap;">Filtrer par catégorie :</label>
             <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px; max-width:140px;"></select>
