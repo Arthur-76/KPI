@@ -415,7 +415,7 @@
             <label for="categoryFilter" style="margin-right:6px; white-space:nowrap;">Filtrer par catégorie :</label>
             <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px; max-width:140px;"></select>
           </div>
-          <button class="export-pdf-btn" onclick="exportPDF()" style="margin-left:8px;">📤 Export PDF</button>
+          <button class="export-pdf-btn" onclick="exportPNG()" style="margin-left:8px;">📤 Export PNG</button>
         </div>
         <div class="graph-container" style="padding: 0 0px;">
           <div id="chart"></div>
@@ -878,15 +878,20 @@ function previewKPI() {
     margin: { t: 60, l: 50, r: 30, b: 50 }
   });
 }
-function exportPDF() {
+function exportPNG() {
   const chartDiv = document.getElementById('chart');
   if (!chartDiv) return;
-  html2pdf().from(chartDiv).set({
-    filename: 'Graphique_KPI.pdf',
-    margin: 0,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true }
-  }).save();
+
+  Plotly.toImage(chartDiv, {format: "png", width: 1200, height: 800})
+    .then(function(dataUrl) {
+      // Crée un lien de téléchargement caché
+      let link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'Graphique_KPI.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
 }
 
 // -- TABLE KPI (avec tri) --
