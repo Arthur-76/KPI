@@ -13,7 +13,7 @@
       --logo-height:44px; --main-gap:26px; --card-padding:22px 18px 20px 18px; --card-radius:21px;
       --graph-min-height:750px; --graph-max-height:60vh; --graph-margin-top:12px; --main-bg:#f4f4f4;
     }
-    html,body{height:100%;padding:0;margin:0;box-sizing:border-box}
+    html,body{height:100%;padding:0;margin:0;box-sizing:border-box;}
     body{
       font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--main-bg)!important;color:#223056;
       min-height:100vh;display:flex;height:100vh;width:100vw;overflow-x:hidden;box-sizing:border-box;
@@ -334,12 +334,25 @@ function updateGraph(){
     plot_bgcolor: '#f4f4f4',
     paper_bgcolor: '#f4f4f4',
     font: { color: '#1686c1' },
-    xaxis: { title: { text: 'Semaine (n°)', font: { size: 24 } }, tickvals: weeks, tickfont: { size: 20 }, automargin: true, title_standoff: 18, standoff: 18 },
-    yaxis: { title: { text: 'Valeur', font: { size: 24 } }, tickfont: { size: 20 }, automargin: true, standoff: 18 },
-    showlegend: true,
-    hovermode: 'x unified',
-    margin: { t: 90, l: 60, r: 30, b: 60 },
-    autosize: true
+  xaxis: {
+    title: { text: 'Semaine (n°)', font: { size: 24 }, standoff: 28 }, // <- correct place
+    tickvals: weeks,
+    tickfont: { size: 20 },
+    automargin: true
+  },
+  yaxis: {
+    title: { text: 'Valeur', font: { size: 24 }, standoff: 10 },         // <- correct place
+    tickfont: { size: 20 },
+    automargin: true
+  },
+
+  showlegend: true,
+  hovermode: 'x unified',
+
+  // add space to the chart edges so titles breathe
+  margin: { t: 100, l: 100, r: 40, b: 100 },  // <- increase L & B
+  height: 650,
+  autosize: true
   }, {responsive:true});
 
   // resize dynamique si la fenêtre change
