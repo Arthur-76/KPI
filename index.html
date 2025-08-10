@@ -7,380 +7,102 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    :root {
-      --main-width: 100vw;
-      --main-padding-x: 18px;
-      --main-radius: 22px;
-      --main-shadow: 0 6px 24px #8ec6f755;
-      --header-bg: rgba(255,255,255,0.88);
-      --header-padding-x: 12px;
-      --header-margin-top: 20px;
-      --header-margin-bottom: 12px;
-      --header-min-height: 70px;
-      --logo-height: 44px;
-      --main-gap: 26px;
-      --card-padding: 22px 18px 20px 18px;
-      --card-radius: 21px;
-      --graph-min-height: 350px;
-      --graph-max-height: 60vh;
-      --graph-margin-top: 12px;
+    :root{
+      --main-width:100vw; --main-padding-x:18px; --main-radius:22px; --main-shadow:0 6px 24px #8ec6f755;
+      --header-bg:#fff; --header-padding-x:12px; --header-margin-top:20px; --header-margin-bottom:12px; --header-min-height:70px;
+      --logo-height:44px; --main-gap:26px; --card-padding:22px 18px 20px 18px; --card-radius:21px;
+      --graph-min-height:750px; --graph-max-height:60vh; --graph-margin-top:12px; --main-bg:#f4f4f4;
     }
-    html, body { height: 100%; padding: 0; margin: 0; box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(135deg, #eaf3ff 0%, #f8fafb 100%);
-      min-height: 100vh;
-      color: #223056;
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      overflow-x: hidden;
-      box-sizing: border-box;
+    html,body{height:100%;padding:0;margin:0;box-sizing:border-box}
+    body{
+      font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--main-bg)!important;color:#223056;
+      min-height:100vh;display:flex;height:100vh;width:100vw;overflow-x:hidden;box-sizing:border-box;
     }
-    .sidebar {
-      background: linear-gradient(135deg, #eaf3ff 0%, #d8e4fa 100%);
-      box-shadow: 4px 0 22px #c5d6f7a0;
-      border-radius: 0 30px 30px 0;
-      min-width: 180px;
-      max-width: 200px;
-      width: 200px;
-      padding: 21px 10px 22px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      position: fixed;
-      left: 0;
-      top: 0;
-      height: 100vh;
-      z-index: 100;
-      box-sizing: border-box;
+    .sidebar{
+      background:var(--main-bg); box-shadow:4px 0 22px #c5d6f7a0; border-radius:0 30px 30px 0;
+      min-width:180px;max-width:200px;width:200px;padding:21px 10px;display:flex;flex-direction:column;gap:6px;
+      position:fixed;left:0;top:0;height:100vh;z-index:100;box-sizing:border-box;
     }
-    .sb-btn {
-      background: linear-gradient(90deg, #eaf3ff 0%, #d8e4fa 100%);
-      color: #2574c5;
-      border-radius: 19px;
-      border: none;
-      font-size: 16.5px;
-      font-weight: 600;
-      margin-bottom: 2px;
-      padding: 13px 13px;
-      display: flex; align-items: center; gap: 13px;
-      cursor: pointer;
-      transition: box-shadow 0.17s, background 0.18s, color 0.14s;
-      outline: none;
-      box-shadow: 0 1px 14px #c0d7f7b4;
-      width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
+    .sb-btn{
+      background:var(--main-bg); color:#2574c5; border-radius:19px; border:none; font-size:16.5px; font-weight:600;
+      margin-bottom:2px; padding:13px; display:flex; align-items:center; gap:13px; cursor:pointer; outline:none;
+      transition:box-shadow .17s, background .18s, color .14s; box-shadow:0 1px 14px #c0d7f7b4; width:100%;
     }
-    .sb-btn.active,
-    .sb-btn:focus {
-      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
-      color: #0e3b4d;
-      box-shadow: 0 3px 18px #8ec6f773;
+    .sb-btn.active,.sb-btn:focus{background:#fff;color:#0e3b4d;box-shadow:0 3px 18px #8ec6f773}
+    .sb-btn:hover{background:#fff;color:#1686c1}
+    .header,.main{max-width:calc(100vw - 200px); width:100%; margin:0 auto; box-sizing:border-box;}
+    .header{
+      margin-top:var(--header-margin-top); margin-bottom:var(--header-margin-bottom); border-radius:var(--main-radius);
+      box-shadow:var(--main-shadow); background:var(--header-bg); backdrop-filter:blur(13px);
+      display:flex; justify-content:space-between; align-items:center; padding:0 var(--header-padding-x);
+      min-height:var(--header-min-height); position:relative; z-index:20; border:1.2px solid #e6e9ee; overflow-x:auto;
     }
-    .sb-btn:hover {
-      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
-      color: #1686c1;
+    .header h1{font-size:23px;color:#1686c1;flex:1;text-align:center;font-weight:700;margin:0 20px;letter-spacing:.45px;line-height:1.2;min-width:0}
+    .main-content{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh;box-sizing:border-box;width:calc(100vw - 200px);max-width:100vw;overflow-x:hidden}
+    .main{padding:0 10px 18px 10px;display:flex;flex-direction:column;gap:var(--main-gap);min-height:100vh;box-sizing:border-box;overflow-x:hidden}
+    .card.section{display:none}.card.section.active{display:block;margin-top:0}
+    .card{
+      background:#fff;border-radius:var(--card-radius);border:1.4px solid #e6e9ee;box-shadow:var(--main-shadow);
+      padding:var(--card-padding);margin-bottom:10px;position:relative;max-width:100%;width:100%;box-sizing:border-box;overflow-x:auto;
     }
-    .header, .main {
-      max-width: calc(100vw - 200px);
-      width: 100%;
-      margin: 0 auto;
-      box-sizing: border-box;
-    }
-    .header {
-      margin-top: var(--header-margin-top);
-      margin-bottom: var(--header-margin-bottom);
-      border-radius: var(--main-radius);
-      box-shadow: var(--main-shadow);
-      background: var(--header-bg);
-      backdrop-filter: blur(13px);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 var(--header-padding-x);
-      min-height: var(--header-min-height);
-      position: relative;
-      z-index: 20;
-      border: 1.2px solid #e6e9ee;
-      transition: max-width 0.2s, width 0.2s;
-      overflow-x: auto;
-    }
-    .header .logos {
-      display: flex; align-items: center; gap: 15px;
-    }
-    .header .logos img {
-      height: var(--logo-height);
-      border-radius: 11px;
-      background: #fff;
-      box-shadow: 0 2px 7px #c3def977;
-    }
-    .header h1 {
-      font-size: 23px;
-      color: #1686c1;
-      flex: 1;
-      text-align: center;
-      font-weight: 700;
-      margin: 0 20px;
-      letter-spacing: 0.45px;
-      line-height: 1.2;
-      word-break: break-word;
-      min-width: 0;
-    }
-    .main-content {
-      margin-left: 200px;
-      flex:1; display: flex; flex-direction: column; min-height: 100vh;
-      box-sizing: border-box;
-      width: calc(100vw - 200px);
-      max-width: 100vw;
-      overflow-x: hidden;
-    }
-    .main {
-      padding: 0 10px 18px 10px;
-      max-width: 100vw;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: var(--main-gap);
-      min-height: 100vh;
-      box-sizing: border-box;
-      overflow-x: hidden;
-    }
-    .card.section { display: none; }
-    .card.section.active { display: block; margin-top: 0; }
-    .card {
-      background: rgba(255,255,255,0.92);
-      border-radius: var(--card-radius);
-      border: 1.4px solid #e6e9ee;
-      box-shadow: var(--main-shadow);
-      padding: var(--card-padding);
-      margin-bottom: 10px;
-      transition: box-shadow 0.16s, border 0.14s, padding 0.2s;
-      position: relative;
-      max-width: 100%;
-      width: 100%;         
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
-    .card h2 {
-      color: #223056;
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 14px;
-    }
-    .graph-container {
-      position: relative;
-      min-height: 60vh;
-      height: calc(100vh - 270px);
-      max-height: 70vh;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-      overflow-x: auto;
-      box-sizing: border-box;
-    }
-    #chart, #preview-chart {
-      flex: 1 1 auto;
-      min-height: var(--graph-min-height);
-      height: 100%;
-      max-height: var(--graph-max-height);
-      background: #eaf3ff;
-      border-radius: 13px;
-      margin-top: var(--graph-margin-top);
-      box-shadow: 0 2px 18px #c0d7f7a6;
-      width: 100%;
-      min-width: 340px;
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
-    .export-pdf-btn {
-      position: absolute;
-      top: 18px;
-      right: 26px;
-      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
-      color: #1686c1;
-      border: none;
-      border-radius: 9px;
-      font-size: 15px;
-      font-weight: 600;
-      padding: 8px 20px;
-      box-shadow: 0 2px 8px #b8c7f733;
-      cursor: pointer;
-      transition: background 0.18s, color 0.12s;
-      z-index: 10;
-    }
-    .export-pdf-btn:hover {
-      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
-      color: #0e3b4d;
-    }
-    .tableau-kpi {
-      width: 100%;
-      border-radius: 13px;
-      overflow-x: auto;
-      background: rgba(255,255,255,0.97);
-      box-shadow: 0 2px 11px #adc9ee1e;
-      margin-top: 6px;
-      border: 1.1px solid #e0e0e0;
-      box-sizing: border-box;
-    }
-    .tableau-kpi table {
-      border-collapse: collapse;
-      width: 100%;
-      font-size: 15px;
-      min-width: 550px;
-      max-width: 100%;
-      table-layout: auto;
-    }
-    .tableau-kpi th, .tableau-kpi td {
-      padding: 11px 13px;
-      text-align: left;
-      border-bottom: 1.1px solid #e3effc;
-      white-space: nowrap;
-    }
-    .tableau-kpi th {
-      background: #eaf3ff;
-      color: #2574c5;
-      font-weight: 700;
-      letter-spacing: 0.08px;
-    }
-    .tableau-kpi th button {
-      background: none;
-      border: none;
-      color: #1686c1;
-      font-weight: 700;
-      font-size: 15px;
-      cursor: pointer;
-      padding: 0;
-      margin: 0;
-      outline: none;
-      transition: color 0.14s;
-    }
-    .tableau-kpi th button:focus,
-    .tableau-kpi th button:hover {
-      color: #115b99;
-      text-decoration: underline;
-    }
-    .tableau-kpi tr:hover { background: #f5faff; }
-    .btn-main {
-      background: linear-gradient(90deg, #eaf3ff 0%, #b4d0f6 100%);
-      color: #2574c5;
-      border-radius: 15px;
-      border: none;
-      font-size: 15.5px;
-      font-weight: 600;
-      padding: 11px 25px;
-      margin-top: 13px;
-      box-shadow: 0 2px 8px #b8c7f733;
-      cursor: pointer;
-      transition: background 0.17s, color 0.13s;
-    }
-    .btn-main:hover, .btn-main:focus {
-      background: linear-gradient(90deg, #b4d0f6 0%, #eaf3ff 100%);
-      color: #0e3b4d;
-      outline: none;
-    }
-    .actions-row { display: flex; gap: 12px; align-items: center; }
-    .action-btn {
-      background: #eaf3ff;
-      color: #2574c5;
-      border: 1.2px solid #b4d0f6;
-      border-radius: 8px;
-      padding: 6px 13px;
-      font-size: 18px;
-      cursor: pointer;
-      transition: background 0.13s, color 0.12s, border 0.13s;
-    }
-    .action-btn:hover {
-      background: #b4d0f6;
-      color: #0e3b4d;
-      border: 1.2px solid #1686c1;
-    }
-    input, select {
-      padding:7px;
-      border-radius:6px;
-      border:1px solid #b4d0f6;
-      margin-bottom: 8px;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-    label { margin-top:8px; font-size: 15px; }
-    /* Spécifique header compact */
-    #kpi-list-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 9px;
-      margin-top: -8px;
-    }
-    #kpi-list-header > div {
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
-    #kpi-list-header label {
-      margin-bottom: 0 !important;
-      font-size: 14px !important;
-      align-self: flex-start;
-    }
-    #categoryFilterList {
-      margin-top: 0 !important;
-    }
-    @media (max-width: 1200px) {
-      .header, .main, .main-content { max-width: 100vw; }
-    }
-    @media (max-width: 900px) {
-      .main { padding: 13px 2vw 18px 2vw;}
-      .main-content { margin-left: 70px !important; width: calc(100vw - 70px);}
-      .sidebar { min-width: 70px; max-width: 70px; width: 70px; }
-      .header { flex-direction: column; gap: 6px; }
-      .header .logos { gap: 7px; }
-      .header h1 { font-size: 18px; margin: 0 6px; }
-      #kpi-list-header {
-        flex-direction: column;
-        gap: 5px;
-        align-items: flex-start;
-        margin-top: 0;
-      }
-    }
-    @media (max-width: 700px) {
-      .main { padding: 1vw 1vw 10px 1vw; }
-      .main-content { margin-left: 0 !important; width: 100vw; }
-      .sidebar { display: none; }
-      .header h1 { font-size: 14px; }
-      .header .logos img { height: 25px;}
-      .export-pdf-btn { right: 8px; top: 7px; }
-      #chart, #preview-chart { min-height: 160px;}
-    }
-    .sidebar-logos {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 18px;
-      margin-top: 50px;
-      margin-bottom: 70px;
-    }
-    .sidebar-logos img {
-      max-width: 140px; width: 140px; height: auto; max-height: 70px;
-      border-radius: 10px; background: #fff;
-      box-shadow: 0 1px 7px #8ec6f755;
-      object-fit: contain; padding: 5px 8px;
-      transition: transform 0.18s;
-    }
-    .sidebar-logos img:hover {
-      transform: scale(1.06); box-shadow: 0 3px 13px #8ec6f799;
-    }
-    .spacer-top { flex: 1 1 1; }
-    .spacer-bottom { flex: 0 0 200px; }
 
-#kpiSelect {
-  min-width: 350px !important;
-  max-width: 440px !important;
-  font-size: 16px;
-}
+    /* ===== Ajustement hauteur : la zone graphique remplit le fond blanc ===== */
+    .graph-container{
+      position:relative;
+      height:calc(100vh - 250px); /* ajuste 240–260 si tu veux plus/moins d’espace */
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      width:100%;
+      box-sizing:border-box;
+      background:#f4f4f4!important;
+    }
+    #chart{
+      flex:1 1 auto;
+      height:100%;
+      min-height:0;
+      max-height:none;
+      background:#f4f4f4!important; border-radius:13px; margin-top:var(--graph-margin-top); box-shadow:0 2px 18px #c0d7f7a6;
+      width:100%; min-width:340px; box-sizing:border-box;
+    }
+    /* Preview : libre mais responsive aussi */
+    #preview-chart{
+      flex:1 1 auto;
+      height:100%;
+      min-height:300px;
+      max-height:none;
+      background:#f4f4f4!important; border-radius:13px; margin-top:var(--graph-margin-top); box-shadow:0 2px 18px #c0d7f7a6;
+      width:100%; min-width:340px; box-sizing:border-box;
+    }
+    /* ====================================================================== */
 
+    .export-pdf-btn{position:absolute;top:18px;right:26px;background:linear-gradient(90deg,#f4f4f4 0%,#fff 100%);color:#1686c1;border:none;border-radius:9px;font-size:15px;font-weight:600;padding:8px 20px;box-shadow:0 2px 8px #b8c7f733;cursor:pointer;transition:background .18s,color .12s;z-index:10}
+    .export-pdf-btn:hover{background:linear-gradient(90deg,#fff 0%,#f4f4f4 100%);color:#0e3b4d}
+    .tableau-kpi{width:100%;border-radius:13px;overflow-x:auto;background:#fff;box-shadow:0 2px 11px #adc9ee1e;margin-top:6px;border:1.1px solid #e0e0e0;box-sizing:border-box}
+    .tableau-kpi table{border-collapse:collapse;width:100%;font-size:15px;min-width:550px}
+    .tableau-kpi th,.tableau-kpi td{padding:11px 13px;text-align:left;border-bottom:1.1px solid #e3effc;white-space:nowrap}
+    .tableau-kpi th{background:#f4f4f4;color:#2574c5;font-weight:700;letter-spacing:.08px}
+    .tableau-kpi th button{background:none;border:none;color:#1686c1;font-weight:700;font-size:15px;cursor:pointer;padding:0;margin:0;outline:none;transition:color .14s}
+    .tableau-kpi th button:hover{color:#115b99;text-decoration:underline}
+    .tableau-kpi tr:hover{background:#f5faff}
+    .btn-main{background:linear-gradient(90deg,#f4f4f4 0%,#fff 100%);color:#2574c5;border-radius:15px;border:none;font-size:15.5px;font-weight:600;padding:11px 25px;margin-top:13px;box-shadow:0 2px 8px #b8c7f733;cursor:pointer;transition:background .17s,color .13s}
+    .btn-main:hover{background:linear-gradient(90deg,#fff 0%,#f4f4f4 100%);color:#0e3b4d}
+    .actions-row{display:flex;gap:12px;align-items:center}
+    .action-btn{background:#f4f4f4;color:#2574c5;border:1.2px solid #b4d0f6;border-radius:8px;padding:6px 13px;font-size:18px;cursor:pointer;transition:background .13s,color .12s,border .13s}
+    .action-btn:hover{background:#b4d0f6;color:#0e3b4d;border:1.2px solid #1686c1}
+    input,select{padding:7px;border-radius:6px;border:1px solid #b4d0f6;margin-bottom:8px;font-size:15px;box-sizing:border-box}
+    label{margin-top:8px;font-size:15px}
+    #kpiSelect{min-width:350px!important;max-width:440px!important;font-size:16px}
+    #kpi-list-header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;margin-bottom:9px;margin-top:-8px}
+    #kpi-list-header>div{margin-top:0!important;margin-bottom:0!important}
+    #kpi-list-header label{margin-bottom:0!important;font-size:14px!important;align-self:flex-start}
+    @media(max-width:900px){.main{padding:13px 2vw 18px 2vw}.main-content{margin-left:70px!important;width:calc(100vw - 70px)}.sidebar{min-width:70px;max-width:70px}.header{flex-direction:column;gap:6px}}
+    @media(max-width:700px){.main{padding:1vw}.main-content{margin-left:0!important;width:100vw}.sidebar{display:none}.header h1{font-size:14px}#chart,#preview-chart{min-height:160px}}
+    .sidebar-logos{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:50px;margin-bottom:70px}
+    .sidebar-logos img{max-width:140px;width:140px;height:auto;max-height:70px;border-radius:10px;background:#fff;box-shadow:0 1px 7px #8ec6f755;object-fit:contain;padding:5px 8px;transition:transform .18s}
+    .sidebar-logos img:hover{transform:scale(1.06);box-shadow:0 3px 13px #8ec6f799}
+    .spacer-top{flex:1 1 1}.spacer-bottom{flex:0 0 200px}
   </style>
 </head>
 <body>
@@ -388,81 +110,64 @@
     <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
     <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
     <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
-    <button class="sb-btn" id="injectDemoKPI" style="margin-top: 18px; background: #b3e6c1;">✨ Injecter les KPI de démo</button>
-    <div class="spacer-top"></div>
-    <div class="spacer-bottom"></div>
+    <button class="sb-btn" id="injectDemoKPI" style="margin-top:18px;background:#b3e6c1;">✨ Injecter les KPI de démo</button>
+    <div class="spacer-top"></div><div class="spacer-bottom"></div>
     <div class="sidebar-logos">
-      <img src="logo-cw.png" alt="Logo Cushman & Wakefield" />
-      <img src="logo-meridien.png" alt="Logo Le Méridien" />
-      <img src="logo-cesi.png" alt="Logo CESI" />
+      <img src="logo-cw.png" alt="Logo Cushman & Wakefield">
+      <img src="logo-meridien.png" alt="Logo Le Méridien">
+      <img src="logo-cesi.png" alt="Logo CESI">
     </div>
   </div>
+
   <div class="main-content">
     <div class="header">
       <div class="logos"></div>
       <h1>KPI – Projet de fin d’études | Le Méridien Étoile</h1>
       <div class="logos"></div>
     </div>
-    <div class="main">
-      <!-- SECTION GRAPHIQUE -->
-      <div id="graph" class="card section active" style="position:relative;">
-        <div style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-          padding: 0 10px 12px 10px;
-          flex-wrap: wrap;
-          ">
-          <div style="display:flex; align-items:center; min-width:300px; flex:2;">
-  <label for="kpiSelect" style="font-weight:600; margin-right:8px; white-space:nowrap;">KPI :</label>
-  <select id="kpiSelect" onchange="updateGraph()" style="flex:1; min-width:350px; max-width:440px; font-size:16px;"></select>
-</div>
 
-          <div style="display:flex; align-items:center; min-width:120px; flex:1;">
-            <label for="categoryFilter" style="margin-right:6px; white-space:nowrap;">Filtrer par catégorie :</label>
-            <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px; max-width:140px;"></select>
+    <div class="main">
+      <!-- GRAPH -->
+      <div id="graph" class="card section active" style="position:relative;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 10px 12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;min-width:300px;flex:2;">
+            <label for="kpiSelect" style="font-weight:600;margin-right:8px;white-space:nowrap;">KPI :</label>
+            <select id="kpiSelect" onchange="updateGraph()" style="flex:1;"></select>
           </div>
-          <button class="export-pdf-btn" onclick="exportPNG()" style="margin-left:8px;">📤 Export PNG</button>
+          <div style="display:flex;align-items:center;min-width:120px;flex:1;">
+            <label for="categoryFilter" style="margin-right:6px;white-space:nowrap;">Filtrer par catégorie :</label>
+            <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px;max-width:140px;"></select>
+          </div>
+          <button class="export-pdf-btn" onclick="exportPNG()">📤 Export PNG</button>
         </div>
-        <div class="graph-container" style="padding: 0 0px;">
-          <div id="chart"></div>
-        </div>
+        <div class="graph-container"><div id="chart"></div></div>
       </div>
-      <!-- SECTION LISTE DES KPI -->
+
+      <!-- LISTE -->
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
-        <!-- Bloc header compact -->
         <div id="kpi-list-header">
-          <div style="display:flex; flex-direction:column; min-width:220px; max-width:400px; flex:2;">
-            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:0;">
-              <span style="font-size:15px; color:#1686c1; font-weight:600;">Catégories</span>
-              <div id="categoryList" style="margin:0 0 0 7px; flex:1;"></div>
+          <div style="display:flex;flex-direction:column;min-width:220px;max-width:400px;flex:2;">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:0;">
+              <span style="font-size:15px;color:#1686c1;font-weight:600;">Catégories</span>
+              <div id="categoryList" style="margin:0 0 0 7px;flex:1;"></div>
             </div>
-            <div style="display:flex; gap:5px; align-items:center; margin-top:2px;">
-              <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1; font-size:13.5px; padding:2px 7px;">
-              <button onclick="addCategory()" style="font-size:15px; padding:2px 8px;">+</button>
+            <div style="display:flex;gap:5px;align-items:center;margin-top:2px;">
+              <input type="text" id="newCategoryName" placeholder="Nouvelle catégorie" style="flex:1;font-size:13.5px;padding:2px 7px;">
+              <button onclick="addCategory()" style="font-size:15px;padding:2px 8px;">+</button>
             </div>
           </div>
-          <div style="display:flex; align-items:flex-start; gap:6px; flex:1; min-width:200px; max-width:340px; margin-top:0;">
-            <label for="categoryFilterList" style="font-size:14px; white-space:nowrap; margin-bottom:0; margin-top:0; line-height:1.8; align-self:flex-start;">Filtrer :</label>
-            <select id="categoryFilterList" onchange="applyCategoryFilterList()" style="min-width:90px; max-width:160px; font-size:14px; padding:2px 8px; margin-top:0;"></select>
+          <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:200px;max-width:340px;margin-top:0;">
+            <label for="categoryFilterList" style="font-size:14px;white-space:nowrap;line-height:1.8;">Filtrer :</label>
+            <select id="categoryFilterList" onchange="applyCategoryFilterList()" style="min-width:90px;max-width:160px;font-size:14px;padding:2px 8px;"></select>
           </div>
         </div>
         <div class="tableau-kpi">
           <table id="kpiTable">
             <thead>
               <tr>
-                <th>
-                  <button type="button" onclick="sortKpiTable('nom')" aria-label="Trier par nom">
-                    Nom <span id="sort-nom-indicator"></span>
-                  </button>
-                </th>
-                <th>
-                  <button type="button" onclick="sortKpiTable('category')" aria-label="Trier par catégorie">
-                    Catégorie <span id="sort-category-indicator"></span>
-                  </button>
-                </th>
+                <th><button type="button" onclick="sortKpiTable('nom')">Nom <span id="sort-nom-indicator"></span></button></th>
+                <th><button type="button" onclick="sortKpiTable('category')">Catégorie <span id="sort-category-indicator"></span></button></th>
                 <th>Objectif</th>
                 <th>Moyenne</th>
                 <th>Actions</th>
@@ -472,472 +177,223 @@
           </table>
         </div>
       </div>
-      <!-- SECTION AJOUT KPI -->
+
+      <!-- AJOUT -->
       <div id="add" class="card section">
         <h2>Ajouter ou modifier un KPI</h2>
         <div id="categoryManagerAdd" style="margin:12px 0 20px 0;">
           <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
           <div id="categoryListAdd"></div>
-          <div style="display:flex; gap:5px; margin-top:6px;">
-            <input type="text" id="newCategoryNameAdd" placeholder="Nouvelle catégorie" style="flex:1; font-size:14px; padding:3px 8px;">
-            <button onclick="addCategoryFromAdd()" style="font-size:15px; padding:3px 10px;">+</button>
+          <div style="display:flex;gap:5px;margin-top:6px;">
+            <input type="text" id="newCategoryNameAdd" placeholder="Nouvelle catégorie" style="flex:1;font-size:14px;padding:3px 8px;">
+            <button onclick="addCategoryFromAdd()" style="font-size:15px;padding:3px 10px;">+</button>
           </div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 7px; max-width:400px;">
-          <label for="newKpiCategory">Catégorie :</label>
-          <select id="newKpiCategory"></select>
-          <label for="newKpiName">Nom :</label>
-          <input type="text" id="newKpiName" oninput="previewKPI()">
-          <label for="newKpiObjectif">Objectif :</label>
-          <input type="number" id="newKpiObjectif" oninput="previewKPI()">
-          <label for="weekCount">Nombre de semaines :</label>
-          <input type="number" id="weekCount" value="6" min="1" max="20" onchange="generateInputs(this.value)">
-          <label>Valeurs :</label>
-          <div id="newKpiValues" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;"></div>
+        <div style="display:flex;flex-direction:column;gap:7px;max-width:400px;">
+          <label for="newKpiCategory">Catégorie :</label><select id="newKpiCategory"></select>
+          <label for="newKpiName">Nom :</label><input type="text" id="newKpiName" oninput="previewKPI">
+          <label for="newKpiObjectif">Objectif :</label><input type="number" id="newKpiObjectif" oninput="previewKPI">
+          <label for="weekCount">Nombre de semaines :</label><input type="number" id="weekCount" value="6" min="1" max="20" onchange="generateInputs(this.value)">
+          <label>Valeurs :</label><div id="newKpiValues" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;"></div>
           <button class="btn-main" onclick="addNewKPI()">Valider</button>
         </div>
         <div style="margin-top:24px;">
-          <h3 style="margin:8px 0 0 0; color:#1686c1;">Prévisualisation</h3>
-          <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;">
-            <div id="preview-chart"></div>
-          </div>
+          <h3 style="margin:8px 0 0 0;color:#1686c1;">Prévisualisation</h3>
+          <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;"><div id="preview-chart"></div></div>
         </div>
       </div>
-      <!-- FIN DES SECTIONS -->
     </div>
   </div>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
+
   <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyC1bhFobfW4zTIQtAW1mF1j0uphbH1fpuO",
-  authDomain: "kpi-eb25b.firebaseapp.com",
-  projectId: "kpi-eb25b",
-  storageBucket: "kpi-eb25b.appspot.com",
-  messagingSenderId: "278263725815",
-  appId: "1:278263725815:web:5fbf68de925ec49e9cdfd2",
-  measurementId: "G-6L30F5NYEN"
-};
+const firebaseConfig={apiKey:"AIzaSyC1bhFobfW4zTIQtAW1mF1j0uphbH1fpuO",authDomain:"kpi-eb25b.firebaseapp.com",projectId:"kpi-eb25b",storageBucket:"kpi-eb25b.appspot.com",messagingSenderId:"278263725815",appId:"1:278263725815:web:5fbf68de925ec49e9cdfd2",measurementId:"G-6L30F5NYEN"};
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db=firebase.firestore();
 
-const ADMIN_KEY = "kpimeridien";
-let kpisArray = [];  // tableau des objets { id, nom, objectif, valeurs, category }
-let categories = [];
-let currentCategory = "all";
-let currentKPIIndex = 0; // index du KPI sélectionné (pour le graphe, l’édition)
-let editingKPIId = null;
+const ADMIN_KEY="kpimeridien";
+let kpisArray=[]; let categories=[]; let currentCategory="all";
+let currentKPIIndex=0; let editingKPIId=null;
 
-// -- Variables de tri --
-let kpiSortField = null;      // 'nom' ou 'category'
-let kpiSortAsc = true;        // true: asc, false: desc
-
-function sortKpiTable(field) {
-  if (kpiSortField === field) {
-    kpiSortAsc = !kpiSortAsc; // inverse le sens si on clique 2x
-  } else {
-    kpiSortField = field;
-    kpiSortAsc = true;
-  }
-  renderTable();
-}
+// Tri
+let kpiSortField=null; let kpiSortAsc=true;
+function sortKpiTable(field){ if(kpiSortField===field){kpiSortAsc=!kpiSortAsc}else{ kpiSortField=field;kpiSortAsc=true } renderTable(); }
 
 // CATEGORIES
-async function fetchCategories() {
-  let snapshot = await db.collection("categories").get();
-  categories = [];
-  snapshot.forEach(doc => categories.push({id: doc.id, name: doc.data().name}));
-  renderCategoryList();
-  renderCategorySelect();
-  renderCategoryFilter();
-  renderCategoryFilterList();
-}
-async function addCategory() {
-  let name = document.getElementById("newCategoryName").value.trim();
-  if (!name) return;
-  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-    alert("Catégorie déjà existante.");
-    return;
-  }
-  await db.collection("categories").add({name, adminKey: ADMIN_KEY});
-  document.getElementById("newCategoryName").value = "";
-  fetchCategories();
-}
-async function addCategoryFromAdd() {
-  let name = document.getElementById("newCategoryNameAdd").value.trim();
-  if (!name) return;
-  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-    alert("Catégorie déjà existante.");
-    return;
-  }
-  await db.collection("categories").add({name, adminKey: ADMIN_KEY});
-  document.getElementById("newCategoryNameAdd").value = "";
-  fetchCategories();
-}
-async function deleteCategory(id) {
-  if (!confirm("Supprimer cette catégorie ?")) return;
-  await db.collection("categories").doc(id).delete();
-  fetchCategories();
-}
-function renderCategoryList() {
-  let divList = document.getElementById("categoryList");
-  if(divList) {
-    divList.innerHTML = "";
-    for (let cat of categories) {
-      let span = document.createElement("span");
-      span.textContent = cat.name;
-      span.style = "margin-right:6px;font-size:13px;";
-      let btn = document.createElement("button");
-      btn.textContent = "✕";
-      btn.title = "Supprimer";
-      btn.onclick = () => deleteCategory(cat.id);
-      btn.style = "background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;";
-      divList.appendChild(span);
-      divList.appendChild(btn);
-    }
-  }
-  let divAdd = document.getElementById("categoryListAdd");
-  if(divAdd) {
-    divAdd.innerHTML = "";
-    for (let cat of categories) {
-      let span = document.createElement("span");
-      span.textContent = cat.name;
-      span.style = "margin-right:6px;font-size:13px;";
-      let btn = document.createElement("button");
-      btn.textContent = "✕";
-      btn.title = "Supprimer";
-      btn.onclick = () => deleteCategory(cat.id);
-      btn.style = "background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;";
-      divAdd.appendChild(span);
-      divAdd.appendChild(btn);
-    }
-  }
-}
-function renderCategorySelect(selected = null) {
-  let sel = document.getElementById("newKpiCategory");
-  if (!sel) return;
-  sel.innerHTML = "";
-  let defaultOpt = document.createElement("option");
-  defaultOpt.value = "";
-  defaultOpt.textContent = "Non classé";
-  sel.appendChild(defaultOpt);
-  for (let cat of categories) {
-    let opt = document.createElement("option");
-    opt.value = cat.name;
-    opt.textContent = cat.name;
-    if (selected && selected === cat.name) opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
-function renderCategoryFilter() {
-  let sel = document.getElementById("categoryFilter");
-  if (!sel) return;
-  sel.innerHTML = "<option value='all'>Toutes</option>";
-  for (let cat of categories) {
-    let opt = document.createElement("option");
-    opt.value = cat.name;
-    opt.textContent = cat.name;
-    sel.appendChild(opt);
-  }
-  sel.value = currentCategory;
-}
-// -- Pour la page LISTE
-function renderCategoryFilterList() {
-  let sel = document.getElementById("categoryFilterList");
-  if (!sel) return;
-  sel.innerHTML = "<option value='all'>Toutes</option>";
-  for (let cat of categories) {
-    let opt = document.createElement("option");
-    opt.value = cat.name;
-    opt.textContent = cat.name;
-    sel.appendChild(opt);
-  }
-  sel.value = currentCategory;
-}
-function applyCategoryFilterList() {
-  let sel = document.getElementById("categoryFilterList");
-  currentCategory = sel.value;
-  // Synchronise aussi le filtre de la vue graphique
-  let selGraph = document.getElementById("categoryFilter");
-  if(selGraph) selGraph.value = currentCategory;
-  renderTable();
-  updateGraph();
-}
-function applyCategoryFilter() {
-  let sel = document.getElementById("categoryFilter");
-  currentCategory = sel.value;
-  let selList = document.getElementById("categoryFilterList");
-  if(selList) selList.value = currentCategory;
-  renderTable();
-  updateGraph();
-}
+async function fetchCategories(){ const snap=await db.collection("categories").get(); categories=[]; snap.forEach(doc=>categories.push({id:doc.id,name:doc.data().name})); renderCategoryList(); renderCategorySelect(); renderCategoryFilter(); renderCategoryFilterList(); }
+async function addCategory(){ const name=document.getElementById("newCategoryName").value.trim(); if(!name) return; if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert("Catégorie déjà existante.");return} await db.collection("categories").add({name,adminKey:ADMIN_KEY}); document.getElementById("newCategoryName").value=""; fetchCategories(); }
+async function addCategoryFromAdd(){ const name=document.getElementById("newCategoryNameAdd").value.trim(); if(!name) return; if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert("Catégorie déjà existante.");return} await db.collection("categories").add({name,adminKey:ADMIN_KEY}); document.getElementById("newCategoryNameAdd").value=""; fetchCategories(); }
+async function deleteCategory(id){ if(!confirm("Supprimer cette catégorie ?")) return; await db.collection("categories").doc(id).delete(); fetchCategories(); }
+function renderCategoryList(){ const divList=document.getElementById("categoryList"); if(divList){ divList.innerHTML=""; for(const cat of categories){ const span=document.createElement("span"); span.textContent=cat.name; span.style="margin-right:6px;font-size:13px;"; const btn=document.createElement("button"); btn.textContent="✕"; btn.title="Supprimer"; btn.onclick=()=>deleteCategory(cat.id); btn.style="background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;"; divList.appendChild(span); divList.appendChild(btn);} }
+  const divAdd=document.getElementById("categoryListAdd"); if(divAdd){ divAdd.innerHTML=""; for(const cat of categories){ const span=document.createElement("span"); span.textContent=cat.name; span.style="margin-right:6px;font-size:13px;"; const btn=document.createElement("button"); btn.textContent="✕"; btn.title="Supprimer"; btn.onclick=()=>deleteCategory(cat.id); btn.style="background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;"; divAdd.appendChild(span); divAdd.appendChild(btn);} } }
+function renderCategorySelect(selected=null){ const sel=document.getElementById("newKpiCategory"); if(!sel) return; sel.innerHTML=""; const def=document.createElement("option"); def.value=""; def.textContent="Non classé"; sel.appendChild(def); for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; if(selected && selected===cat.name) opt.selected=true; sel.appendChild(opt);} }
+function renderCategoryFilter(){ const sel=document.getElementById("categoryFilter"); if(!sel) return; sel.innerHTML="<option value='all'>Toutes</option>"; for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; sel.appendChild(opt);} sel.value=currentCategory; }
+function renderCategoryFilterList(){ const sel=document.getElementById("categoryFilterList"); if(!sel) return; sel.innerHTML="<option value='all'>Toutes</option>"; for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; sel.appendChild(opt);} sel.value=currentCategory; }
+function applyCategoryFilterList(){ currentCategory=document.getElementById("categoryFilterList").value; const selGraph=document.getElementById("categoryFilter"); if(selGraph) selGraph.value=currentCategory; renderTable(); updateGraph(); }
+function applyCategoryFilter(){ currentCategory=document.getElementById("categoryFilter").value; const selList=document.getElementById("categoryFilterList"); if(selList) selList.value=currentCategory; renderTable(); updateGraph(); }
 
 // KPI CRUD
-async function fetchKpiData() {
-  try {
-    let snapshot = await db.collection("kpi").get();
-    kpisArray = [];
-    snapshot.forEach(doc => {
-      let d = doc.data();
-      if (d.adminKey) delete d.adminKey;
-      kpisArray.push({ id: doc.id, ...d });
-    });
-    currentKPIIndex = 0;
-    editingKPIId = null;
-    renderTable();
-    updateGraph();
-    generateInputs(getWeeks().length);
-    previewKPI();
-    checkHideInjectButton();
-    fetchCategories();
-  } catch (e) {
-    alert("Erreur de chargement Firestore : " + e);
-    console.error(e);
-  }
+async function fetchKpiData(){
+  try{
+    const snapshot=await db.collection("kpi").get();
+    kpisArray=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.adminKey) delete d.adminKey; kpisArray.push({id:doc.id,...d}); });
+    currentKPIIndex=0; editingKPIId=null; renderTable(); updateGraph(); generateInputs(getWeeks().length); previewKPI(); checkHideInjectButton(); fetchCategories();
+  }catch(e){ alert("Erreur de chargement Firestore : "+e); console.error(e); }
 }
-async function saveKPI(data, docId = null) {
-  let payload = {
-    nom: data.nom,
-    objectif: data.objectif,
-    valeurs: data.valeurs,
-    adminKey: ADMIN_KEY,
-    category: data.category || ""
-  };
-  if (docId) {
-    await db.collection("kpi").doc(docId).set(payload);
-  } else {
-    await db.collection("kpi").add(payload);
-  }
+async function saveKPI(data,docId=null){
+  const payload={ nom:data.nom, objectif:data.objectif, valeurs:data.valeurs, adminKey:ADMIN_KEY, category:data.category||"" };
+  if(docId){ await db.collection("kpi").doc(docId).set(payload); } else { await db.collection("kpi").add(payload); }
   fetchKpiData();
 }
-async function deleteKPIById(docId) {
-  if (!confirm("Supprimer ce KPI ?")) return;
-  await db.collection("kpi").doc(docId).delete();
-  fetchKpiData();
+async function deleteKPIById(docId){ if(!confirm("Supprimer ce KPI ?")) return; await db.collection("kpi").doc(docId).delete(); fetchKpiData(); }
+function editKPIById(docId){
+  const idx=kpisArray.findIndex(k=>k.id===docId); if(idx===-1) return; const k=kpisArray[idx];
+  showSection('add',document.querySelectorAll('.sb-btn')[2]); document.getElementById("newKpiName").value=k.nom;
+  document.getElementById("newKpiObjectif").value=k.objectif; document.getElementById("weekCount").value=k.valeurs.length;
+  generateInputs(k.valeurs.length,k.valeurs); renderCategorySelect(k.category||""); editingKPIId=docId; currentKPIIndex=idx; setTimeout(previewKPI,50);
 }
-function editKPIById(docId) {
-  let idx = kpisArray.findIndex(kpi => kpi.id === docId);
-  if (idx === -1) return;
-  let kpi = kpisArray[idx];
-  showSection('add', document.querySelectorAll('.sb-btn')[2]);
-  document.getElementById("newKpiName").value = kpi.nom;
-  document.getElementById("newKpiObjectif").value = kpi.objectif;
-  document.getElementById("weekCount").value = kpi.valeurs.length;
-  generateInputs(kpi.valeurs.length, kpi.valeurs);
-  renderCategorySelect(kpi.category || "");
-  editingKPIId = docId;
-  currentKPIIndex = idx;
-  setTimeout(previewKPI, 50);
+async function duplicateKPI(name){
+  const k=kpisArray.find(x=>x.nom===name); if(!k) return; let base=name.replace(/\s*\(copie.*\)$/,""); let newName=base+" (copie)"; let c=2;
+  while(kpisArray.find(x=>x.nom===newName)){ newName=base+" (copie "+c+")"; c++; }
+  await db.collection("kpi").add({nom:newName,objectif:k.objectif,valeurs:[...k.valeurs],category:k.category||"",adminKey:ADMIN_KEY}); fetchKpiData();
 }
-async function duplicateKPI(name) {
-  let kpi = kpisArray.find(k => k.nom === name);
-  if (!kpi) return;
-  let baseName = name.replace(/\s*\(copie.*\)$/,"");
-  let newName = baseName + " (copie)";
-  let count = 2;
-  while (kpisArray.find(k => k.nom === newName)) {
-    newName = baseName + " (copie " + count + ")";
-    count++;
-  }
-  await db.collection("kpi").add({
-    nom: newName,
-    objectif: kpi.objectif,
-    valeurs: [...kpi.valeurs],
-    category: kpi.category || "",
-    adminKey: ADMIN_KEY
-  });
-  fetchKpiData();
-}
-async function addNewKPI() {
-  const nom = document.getElementById("newKpiName").value;
-  const objectif = parseFloat(document.getElementById("newKpiObjectif").value);
-  const count = parseInt(document.getElementById("weekCount").value);
-  const category = document.getElementById("newKpiCategory").value;
-  const valeurs = Array.from({length: count}, (_, i) => parseFloat(document.getElementById("newVal" + i).value));
-  if (!nom || isNaN(objectif) || valeurs.some(isNaN)) {
-    alert("Merci de remplir tous les champs.");
-    return;
-  }
-  await saveKPI({ nom, objectif, valeurs, category }, editingKPIId);
-  showSection('list', document.querySelectorAll('.sb-btn')[1]);
-  editingKPIId = null;
+async function addNewKPI(){
+  const nom=document.getElementById("newKpiName").value;
+  const objectif=parseFloat(document.getElementById("newKpiObjectif").value);
+  const count=parseInt(document.getElementById("weekCount").value);
+  const category=document.getElementById("newKpiCategory").value;
+  const valeurs=Array.from({length:count},(_,i)=>parseFloat(document.getElementById("newVal"+i).value));
+  if(!nom || isNaN(objectif) || valeurs.some(isNaN)){ alert("Merci de remplir tous les champs."); return; }
+  await saveKPI({nom,objectif,valeurs,category},editingKPIId); showSection('list',document.querySelectorAll('.sb-btn')[1]); editingKPIId=null;
 }
 
-// NAVIGATION
-function showSection(id, btn) {
-  document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
-  if(btn) btn.classList.add("active");
-  if (id === "list") renderTable();
-  if (id === "graph") updateGraph();
-  if (id === "add") prepareAddForm();
+// NAV
+function showSection(id,btn){ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".sb-btn").forEach(b=>b.classList.remove("active")); if(btn) btn.classList.add("active");
+  if(id==="list") renderTable(); if(id==="graph") updateGraph(); if(id==="add") prepareAddForm();
 }
-function prepareAddForm() {
-  document.getElementById("newKpiName").value = "";
-  document.getElementById("newKpiObjectif").value = "";
-  document.getElementById("weekCount").value = getWeeks().length;
-  generateInputs(getWeeks().length);
-  renderCategorySelect();
-  editingKPIId = null;
-  setTimeout(previewKPI, 20);
+function prepareAddForm(){ document.getElementById("newKpiName").value=""; document.getElementById("newKpiObjectif").value="";
+  document.getElementById("weekCount").value=getWeeks().length; generateInputs(getWeeks().length); renderCategorySelect(); editingKPIId=null; setTimeout(previewKPI,20);
 }
-function getWeeks() {
-  // On utilise la longueur des semaines du premier KPI si existant
-  if (kpisArray.length && kpisArray[0].valeurs)
-    return kpisArray[0].valeurs.map((_,i) => 27+i);
-  return [27,28,29,30,31,32];
+function getWeeks(){ if(kpisArray.length && kpisArray[0].valeurs) return kpisArray[0].valeurs.map((_,i)=>27+i); return [27,28,29,30,31,32]; }
+
+// EXPORT PNG
+function exportPNG(){
+  const chartDiv=document.getElementById('chart'); if(!chartDiv) return;
+  Plotly.toImage(chartDiv,{format:"png",width:1200,height:800}).then(dataUrl=>{
+    const a=document.createElement('a'); a.href=dataUrl; a.download='Graphique_KPI.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
 }
 
-// GRAPHIQUE
-function updateGraph() {
-  let select = document.getElementById("kpiSelect");
-  let chartDiv = document.getElementById("chart");
-  if (!select || !chartDiv) return;
-  select.innerHTML = "";
-  let filtered = kpisArray.filter(kpi => currentCategory === "all" || (kpi.category || "") === currentCategory);
-  if (filtered.length === 0) {
-    chartDiv.innerHTML = "<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>";
-    return;
-  }
-  filtered.forEach((kpi, idx) => {
-    let opt = document.createElement("option");
-    opt.value = idx;
-    opt.text = kpi.nom;
-    select.add(opt);
-  });
-  if (currentKPIIndex >= filtered.length) currentKPIIndex = 0;
-  select.value = currentKPIIndex;
-  let data = filtered[currentKPIIndex];
-  let weeks = data.valeurs.map((_,i) => 27+i);
-  let suffix = data.nom && data.nom.includes('%') ? '%' : '';
-  Plotly.newPlot('chart', [
-    {
-      x: weeks,
-      y: data.valeurs,
-      mode: 'lines+markers',
-      name: 'Mesure',
-      line: {color: '#1686c1', width: 3},
-      marker: {color: '#1686c1', size: 8},
-      hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
-    },
-    {
-      x: weeks,
-      y: weeks.map(() => data.objectif),
-      mode: 'lines',
-      name: 'Objectif',
-      line: {color: '#ffe600', dash: 'dash'},
-      hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
+function wrapTitle(text, maxCharsPerLine = 50) {
+  const words = (text || "").split(/\s+/);
+  let line = "", lines = [];
+  for (const w of words) {
+    if ((line + " " + w).trim().length > maxCharsPerLine) {
+      lines.push(line.trim());
+      line = w;
+    } else {
+      line += " " + w;
     }
-  ], {
-    title: {text: data.nom.toUpperCase(), font: {color: '#1686c1'}},
-    plot_bgcolor: '#eaf3ff',
-    paper_bgcolor: '#eaf3ff',
-    font: {color: '#1686c1'},
-    xaxis: {title: 'Semaine (n°)', tickvals: weeks},
-    yaxis: {title: 'Valeur'},
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines.join("<br>");
+}
+
+// GRAPH
+function updateGraph(){
+  const select=document.getElementById("kpiSelect"); const chartDiv=document.getElementById("chart"); if(!select||!chartDiv) return;
+  select.innerHTML=""; const filtered=kpisArray.filter(k=>currentCategory==="all"||(k.category||"")===currentCategory);
+  if(filtered.length===0){ chartDiv.innerHTML="<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>"; return; }
+  filtered.forEach((k,idx)=>{ const opt=document.createElement("option"); opt.value=idx; opt.text=k.nom; select.add(opt); });
+  if(currentKPIIndex>=filtered.length) currentKPIIndex=0; select.value=currentKPIIndex;
+  const data=filtered[currentKPIIndex]; const weeks=data.valeurs.map((_,i)=>27+i); const suffix=(data.nom||"").includes('%')?'':'';
+
+  const traces=[
+    {x:weeks,y:data.valeurs,mode:'lines+markers',name:'Mesure',line:{color:'#1686c1',width:3},marker:{color:'#1686c1',size:8},
+     hovertemplate:'Mesure : %{y}'+suffix+'<extra></extra>'},
+    {x:weeks,y:weeks.map(()=>data.objectif),mode:'lines',name:'Objectif',line:{color:'#ffe600',dash:'dash'},
+     hovertemplate:'Objectif : %{y}'+suffix+'<extra></extra>'}
+  ];
+
+  const wrappedTitle = wrapTitle((data.nom || "").toUpperCase(), 50);
+
+  Plotly.newPlot('chart', traces, {
+    title: { text: wrappedTitle, font: { color: '#1686c1', size: 30 }, x: 0.5, xanchor: 'center' },
+    plot_bgcolor: '#f4f4f4',
+    paper_bgcolor: '#f4f4f4',
+    font: { color: '#1686c1' },
+    xaxis: { title: { text: 'Semaine (n°)', font: { size: 24 } }, tickvals: weeks, tickfont: { size: 20 }, automargin: true, title_standoff: 18, standoff: 18 },
+    yaxis: { title: { text: 'Valeur', font: { size: 24 } }, tickfont: { size: 20 }, automargin: true, standoff: 18 },
     showlegend: true,
     hovermode: 'x unified',
-    margin: { t: 60, l: 50, r: 30, b: 50 }
-  });
-  select.onchange = function() {
-    currentKPIIndex = parseInt(select.value);
-    updateGraph();
-  };
+    margin: { t: 90, l: 60, r: 30, b: 60 },
+    autosize: true
+  }, {responsive:true});
+
+  // resize dynamique si la fenêtre change
+  const el = document.getElementById('chart');
+  window.addEventListener('resize', () => Plotly.Plots.resize(el));
+
+  select.onchange=function(){ currentKPIIndex=parseInt(select.value); updateGraph(); };
 }
-function previewKPI() {
-  const nom = document.getElementById("newKpiName").value || "Nouveau KPI";
-  const objectif = parseFloat(document.getElementById("newKpiObjectif").value) || 0;
-  const count = parseInt(document.getElementById("weekCount").value) || 6;
-  const x = Array.from({length: count}, (_, i) => 27 + i);
-  let valeurs = [];
-  for(let i=0; i<count; i++) {
-    const val = parseFloat(document.getElementById("newVal"+i)?.value);
-    valeurs.push(isNaN(val) ? null : val);
-  }
-  let suffix = nom.includes('%') ? '%' : '';
-  Plotly.newPlot('preview-chart', [
-    {
-      x: x,
-      y: valeurs,
-      mode: 'lines+markers',
-      name: 'Mesure',
-      line: {color: '#1686c1', width: 3},
-      marker: {color: '#1686c1', size: 8},
-      hovertemplate: 'Mesure : %{y}' + suffix + '<extra></extra>'
-    },
-    {
-      x: x,
-      y: x.map(() => objectif),
-      mode: 'lines',
-      name: 'Objectif',
-      line: {color: '#ffe600', dash: 'dash'},
-      hovertemplate: 'Objectif : %{y}' + suffix + '<extra></extra>'
-    }
-  ], {
-    title: {text: nom.toUpperCase(), font: {color: '#1686c1'}},
-    plot_bgcolor: '#eaf3ff',
-    paper_bgcolor: '#eaf3ff',
-    font: {color: '#1686c1'},
-    xaxis: {title: 'Semaine (n°)', tickvals: x},
-    yaxis: {title: 'Valeur'},
+
+function previewKPI(){
+  const nom=document.getElementById("newKpiName").value||"Nouveau KPI";
+  const objectif=parseFloat(document.getElementById("newKpiObjectif").value)||0;
+  const count=parseInt(document.getElementById("weekCount").value)||6;
+  const x=Array.from({length:count},(_,i)=>27+i);
+  const valeurs=Array.from({length:count},(_,i)=>{ const v=parseFloat(document.getElementById("newVal"+i)?.value); return isNaN(v)?null:v; });
+  const suffix=nom.includes('%')?'':'';
+
+  const traces=[
+    {x:x,y:valeurs,mode:'lines+markers',name:'Mesure',line:{color:'#1686c1',width:3},marker:{color:'#1686c1',size:8},
+     hovertemplate:'Mesure : %{y}'+suffix+'<extra></extra>'},
+    {x:x,y:x.map(()=>objectif),mode:'lines',name:'Objectif',line:{color:'#ffe600',dash:'dash'},
+     hovertemplate:'Objectif : %{y}'+suffix+'<extra></extra>'}
+  ];
+
+  const wrappedPrevTitle = wrapTitle((nom || "NOUVEAU KPI").toUpperCase(), 50);
+
+  Plotly.newPlot('preview-chart', traces, {
+    title: { text: wrappedPrevTitle, font: { color: '#1686c1', size: 30 }, x: 0.5, xanchor: 'center' },
+    plot_bgcolor: '#f4f4f4',
+    paper_bgcolor: '#f4f4f4',
+    font: { color: '#1686c1' },
+    xaxis: { title: { text: 'Semaine (n°)', font: { size: 24 } }, tickvals: x, tickfont: { size: 20 }, automargin: true, standoff: 18 },
+    yaxis: { title: { text: 'Valeur', font: { size: 24 } }, tickfont: { size: 20 }, automargin: true, standoff: 18 },
     showlegend: true,
     hovermode: 'x unified',
-    margin: { t: 60, l: 50, r: 30, b: 50 }
-  });
-}
-function exportPNG() {
-  const chartDiv = document.getElementById('chart');
-  if (!chartDiv) return;
-
-  Plotly.toImage(chartDiv, {format: "png", width: 1200, height: 800})
-    .then(function(dataUrl) {
-      // Crée un lien de téléchargement caché
-      let link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = 'Graphique_KPI.png';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
+    margin: { t: 90, l: 60, r: 30, b: 60 },
+    autosize: true
+  }, {responsive:true});
 }
 
-// -- TABLE KPI (avec tri) --
-function renderTable() {
-  const kpiTable = document.querySelector("#kpiTable tbody");
-  if (!kpiTable) return;
-  kpiTable.innerHTML = "";
-  let filtered = kpisArray.filter(kpi => currentCategory === "all" || (kpi.category || "") === currentCategory);
-
-  // -- Tri par champ si demandé --
-  if (kpiSortField) {
-    filtered.sort((a, b) => {
-      let va = (kpiSortField === "category" ? (a.category || "Non classé") : a.nom).toLowerCase();
-      let vb = (kpiSortField === "category" ? (b.category || "Non classé") : b.nom).toLowerCase();
-      if (va < vb) return kpiSortAsc ? -1 : 1;
-      if (va > vb) return kpiSortAsc ? 1 : -1;
-      return 0;
-    });
+// TABLE
+function renderTable(){
+  const tbody=document.querySelector("#kpiTable tbody"); if(!tbody) return; tbody.innerHTML="";
+  let filtered=kpisArray.filter(k=>currentCategory==="all"||(k.category||"")===currentCategory);
+  if(kpiSortField){
+    filtered.sort((a,b)=>{ const va=(kpiSortField==="category"?(a.category||"Non classé"):a.nom).toLowerCase();
+      const vb=(kpiSortField==="category"?(b.category||"Non classé"):b.nom).toLowerCase();
+      if(va<vb) return kpiSortAsc?-1:1; if(va>vb) return kpiSortAsc?1:-1; return 0; });
   }
+  document.getElementById("sort-nom-indicator").innerHTML=(kpiSortField==="nom"?(kpiSortAsc?"▲":"▼"):"");
+  document.getElementById("sort-category-indicator").innerHTML=(kpiSortField==="category"?(kpiSortAsc?"▲":"▼"):"");
 
-  // Affichage de la flèche de tri
-  document.getElementById("sort-nom-indicator").innerHTML =
-    kpiSortField === "nom" ? (kpiSortAsc ? "▲" : "▼") : "";
-  document.getElementById("sort-category-indicator").innerHTML =
-    kpiSortField === "category" ? (kpiSortAsc ? "▲" : "▼") : "";
+  if(filtered.length===0){ tbody.innerHTML="<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>"; return; }
 
-  if (filtered.length === 0) {
-    kpiTable.innerHTML = "<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>";
-    return;
-  }
-  for (let kpi of filtered) {
-    const tr = document.createElement("tr");
-    const objectif = kpi.objectif;
-    const avg = (kpi.valeurs.reduce((a,b)=>a+b,0)/kpi.valeurs.length).toFixed(2);
-    const unit = kpi.nom.includes('%') ? '%' : kpi.nom.includes('€') ? '€' : (kpi.nom.includes('jours') ? 'j' : '');
-    tr.innerHTML = `
+  for(const kpi of filtered){
+    const tr=document.createElement("tr");
+    const objectif=kpi.objectif;
+    const avg=(kpi.valeurs.reduce((a,b)=>a+b,0)/kpi.valeurs.length).toFixed(2);
+    const unit=kpi.nom.includes('%')?'%':(kpi.nom.includes('€')?'€':(kpi.nom.includes('jours')?'j':''));
+    tr.innerHTML=`
       <td>${kpi.nom}</td>
-      <td>${kpi.category || "Non classé"}</td>
+      <td>${kpi.category||"Non classé"}</td>
       <td>${objectif} ${unit}</td>
       <td>${avg} ${unit}</td>
       <td>
@@ -946,63 +402,37 @@ function renderTable() {
           <button class="action-btn" title="Supprimer" onclick="deleteKPIById('${kpi.id}')">🗑️</button>
           <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.nom.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
         </div>
-      </td>
-    `;
-    kpiTable.appendChild(tr);
+      </td>`;
+    tbody.appendChild(tr);
   }
-}
-function generateInputs(count, vals=[]) {
-  const container = document.getElementById("newKpiValues");
-  if (!container) return;
-  container.innerHTML = "";
-  const startWeek = 27;
-  for (let i = 0; i < count; i++) {
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = "any";
-    input.id = "newVal" + i;
-    input.placeholder = "Semaine " + (startWeek + i);
-    input.style = "padding:7px;border-radius:6px;border:1px solid #b4d0f6;";
-    if(vals[i] !== undefined) input.value = vals[i];
-    input.oninput = previewKPI;
-    container.appendChild(input);
-  }
-  setTimeout(previewKPI, 20);
 }
 
-// DEMO DATA
-document.getElementById("injectDemoKPI").onclick = async function() {
-  if(!confirm("Cette opération va remplacer tous les KPI par les valeurs de démo ! Continuer ?")) return;
-  let btn = document.getElementById("injectDemoKPI");
-  btn.disabled = true;
-  btn.innerText = "Injection en cours...";
-  let snapshot = await db.collection("kpi").get();
-  let batch = db.batch();
-  snapshot.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  const demo = [
-    { nom: "Écart budget prévisionnel / réalisé (%)", objectif: 10, valeurs: [9.12, 10.85, 10.2, 9.8, 8.47, 8.47], category: "Budget", adminKey: ADMIN_KEY },
-    { nom: "Taux de valorisation des devis en moins de 5 jours (%)", objectif: 90, valeurs: [73.57, 95.39, 88.23, 91.12, 72.56, 98.19], category: "Suivi", adminKey: ADMIN_KEY },
-    { nom: "Temps moyen de traitement d’un défaut signalé (en jours)", objectif: 2, valeurs: [1.78, 1.66, 2.01, 1.86, 1.67, 1.9], category: "Qualité", adminKey: ADMIN_KEY }
-  ];
-  await Promise.all(demo.map(kpi => db.collection("kpi").add(kpi)));
-  btn.innerText = "KPI de démo injectés !";
-  setTimeout(() => {
-    fetchKpiData();
-    btn.disabled = false;
-    btn.innerText = "✨ Injecter les KPI de démo";
-    checkHideInjectButton();
-  }, 800);
-};
-async function checkHideInjectButton() {
-  let snapshot = await db.collection("kpi").get();
-  let btn = document.getElementById("injectDemoKPI");
-  if (snapshot.size > 0) btn.style.display = "none";
-  else btn.style.display = "";
+function generateInputs(count,vals=[]){
+  const container=document.getElementById("newKpiValues"); if(!container) return; container.innerHTML="";
+  const startWeek=27; for(let i=0;i<count;i++){ const input=document.createElement("input");
+    input.type="number"; input.step="any"; input.id="newVal"+i; input.placeholder="Semaine "+(startWeek+i);
+    input.style="padding:7px;border-radius:6px;border:1px solid #b4d0f6;"; if(vals[i]!==undefined) input.value=vals[i];
+    input.oninput=previewKPI; container.appendChild(input); }
+  setTimeout(previewKPI,20);
 }
+
+// DEMO
+document.getElementById("injectDemoKPI").onclick=async function(){
+  if(!confirm("Cette opération va remplacer tous les KPI par les valeurs de démo ! Continuer ?")) return;
+  const btn=this; btn.disabled=true; btn.innerText="Injection en cours...";
+  const snap=await db.collection("kpi").get(); const batch=db.batch(); snap.forEach(doc=>batch.delete(doc.ref)); await batch.commit();
+  const demo=[
+    {nom:"Écart budget prévisionnel / réalisé (%)",objectif:10,valeurs:[9.12,10.85,10.2,9.8,8.47,8.47],category:"Budget",adminKey:ADMIN_KEY},
+    {nom:"Taux de valorisation des devis en moins de 5 jours (%)",objectif:90,valeurs:[73.57,95.39,88.23,91.12,72.56,98.19],category:"Suivi",adminKey:ADMIN_KEY},
+    {nom:"Temps moyen de traitement d’un défaut signalé (en jours)",objectif:2,valeurs:[1.78,1.66,2.01,1.86,1.67,1.9],category:"Qualité",adminKey:ADMIN_KEY}
+  ];
+  await Promise.all(demo.map(k=>db.collection("kpi").add(k)));
+  btn.innerText="KPI de démo injectés !"; setTimeout(()=>{ fetchKpiData(); btn.disabled=false; btn.innerText="✨ Injecter les KPI de démo"; checkHideInjectButton(); },800);
+};
+async function checkHideInjectButton(){ const snapshot=await db.collection("kpi").get(); const btn=document.getElementById("injectDemoKPI"); btn.style.display=(snapshot.size>0)?"none":""; }
 
 // INIT
-window.onload = fetchKpiData;
+window.onload=fetchKpiData;
   </script>
 </body>
 </html>
