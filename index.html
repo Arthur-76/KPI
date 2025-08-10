@@ -111,6 +111,23 @@
     .sidebar-logos img{max-width:140px;width:140px;height:auto;max-height:70px;border-radius:10px;background:#fff;box-shadow:0 1px 7px #8ec6f755;object-fit:contain;padding:5px 8px;transition:transform .18s}
     .sidebar-logos img:hover{transform:scale(1.06);box-shadow:0 3px 13px #8ec6f799}
     .spacer-top{flex:1 1 1}.spacer-bottom{flex:0 0 200px}
+
+/* ==== Jauge moyenne (atteinte objectif) ==== */
+.gauge-wrap{
+  display:flex; flex-direction:column; gap:6px; min-width:220px; max-width:380px;
+}
+.gauge-bar{
+  position:relative; width:100%; height:12px; border-radius:999px;
+  background:#eef2f7; border:1px solid #e1e6ef; overflow:hidden;
+}
+.gauge-fill{
+  height:100%; width:0%; background:#e74c3c; border-radius:999px; transition:width .35s ease;
+}
+.gauge-label{
+  font-size:12.5px; color:#50607a;
+}
+
+
   </style>
 </head>
 <body>
@@ -393,40 +410,138 @@ function previewKPI(){
   }, {responsive:true});
 }
 
+// Détermine le sens de "mieux" : plus haut = mieux (par défaut) ou plus bas = mieux
+function getKpiDirection(name){
+  const n = (name || "").toLowerCase();
+  // Heuristiques simples (tu peux affiner si besoin)
+  if (n.includes('écart') || n.includes('ecart') || n.includes('temps') || n.includes('jour')) return 'lower';
+  return 'higher';
+}
+
+// Calcule le % d'atteinte de l'objectif en tenant compte du sens
+function computeAchievement(name, avg, objectif){
+  const dir = getKpiDirection(name);
+  let pct = dir === 'higher' ? (avg / objectif) * 100 : (objectif / avg) * 100;
+  // clamp
+  pct = Math.max(0, Math.min(pct, 130)); // on limite l’affichage à 130% max
+  return { pct, dir };
+}
+
+// Couleur selon le % (rouge → orange → jaune → vert)
+function gaugeColor(pct){
+  if (pct >= 100) return '#2ecc71';   // vert
+  if (pct >= 90)  return '#9bdc65';   // vert clair
+  if (pct >= 80)  return '#f1c40f';   // jaune
+  if (pct >= 60)  return '#f39c12';   // orange
+  return '#e74c3c';                   // rouge
+}
+
+// Construit le DOM de la jauge
+function renderGauge(avg, objectif, unit, name){
+  const { pct, dir } = computeAchievement(name, avg, objectif);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'gauge-wrap';
+
+  const bar = document.createElement('div');
+  bar.className = 'gauge-bar';
+
+  const fill = document.createElement('div');
+  fill.className = 'gauge-fill';
+  fill.style.width = Math.min(pct, 100) + '%';
+  fill.style.background = gaugeColor(pct);
+
+  bar.appendChild(fill);
+
+  const label = document.createElement('div');
+  label.className = 'gauge-label';
+  // Texte indicatif (FR)
+  const pctTxt = `${Math.round(pct)}%`;
+  const senseTxt = dir === 'higher' ? `de l’objectif` : `du seuil`;
+  label.textContent = `${avg} ${unit} • ${pctTxt} ${senseTxt}`;
+
+  wrap.appendChild(bar);
+  wrap.appendChild(label);
+  return wrap;
+}
+
+
+
 // TABLE
 function renderTable(){
-  const tbody=document.querySelector("#kpiTable tbody"); if(!tbody) return; tbody.innerHTML="";
-  let filtered=kpisArray.filter(k=>currentCategory==="all"||(k.category||"")===currentCategory);
-  if(kpiSortField){
-    filtered.sort((a,b)=>{ const va=(kpiSortField==="category"?(a.category||"Non classé"):a.nom).toLowerCase();
-      const vb=(kpiSortField==="category"?(b.category||"Non classé"):b.nom).toLowerCase();
-      if(va<vb) return kpiSortAsc?-1:1; if(va>vb) return kpiSortAsc?1:-1; return 0; });
+  const tbody = document.querySelector("#kpiTable tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  let filtered = kpisArray.filter(k => currentCategory === "all" || (k.category || "") === currentCategory);
+
+  // Tri
+  if (kpiSortField){
+    filtered.sort((a,b)=>{
+      const va = (kpiSortField === "category" ? (a.category || "Non classé") : a.nom).toLowerCase();
+      const vb = (kpiSortField === "category" ? (b.category || "Non classé") : b.nom).toLowerCase();
+      if (va < vb) return kpiSortAsc ? -1 : 1;
+      if (va > vb) return kpiSortAsc ? 1 : -1;
+      return 0;
+    });
   }
-  document.getElementById("sort-nom-indicator").innerHTML=(kpiSortField==="nom"?(kpiSortAsc?"▲":"▼"):"");
-  document.getElementById("sort-category-indicator").innerHTML=(kpiSortField==="category"?(kpiSortAsc?"▲":"▼"):"");
+  document.getElementById("sort-nom-indicator").innerHTML =
+    (kpiSortField === "nom" ? (kpiSortAsc ? "▲" : "▼") : "");
+  document.getElementById("sort-category-indicator").innerHTML =
+    (kpiSortField === "category" ? (kpiSortAsc ? "▲" : "▼") : "");
 
-  if(filtered.length===0){ tbody.innerHTML="<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>"; return; }
+  if (filtered.length === 0){
+    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>";
+    return;
+  }
 
-  for(const kpi of filtered){
-    const tr=document.createElement("tr");
-    const objectif=kpi.objectif;
-    const avg=(kpi.valeurs.reduce((a,b)=>a+b,0)/kpi.valeurs.length).toFixed(2);
-    const unit=kpi.nom.includes('%')?'%':(kpi.nom.includes('€')?'€':(kpi.nom.includes('jours')?'j':''));
-    tr.innerHTML=`
-      <td>${kpi.nom}</td>
-      <td>${kpi.category||"Non classé"}</td>
-      <td>${objectif} ${unit}</td>
-      <td>${avg} ${unit}</td>
-      <td>
-        <div class="actions-row">
-          <button class="action-btn" title="Modifier" onclick="editKPIById('${kpi.id}')">✏️</button>
-          <button class="action-btn" title="Supprimer" onclick="deleteKPIById('${kpi.id}')">🗑️</button>
-          <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.nom.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
-        </div>
-      </td>`;
+  for (const kpi of filtered){
+    const tr = document.createElement("tr");
+
+    // Données
+    const objectif = kpi.objectif;
+    const avg = +(kpi.valeurs.reduce((a,b)=>a+b,0) / kpi.valeurs.length).toFixed(2);
+    const unit =
+      kpi.nom.includes('%') ? '%' :
+      (kpi.nom.includes('€') ? '€' :
+      (kpi.nom.toLowerCase().includes('jour') ? 'j' : ''));
+
+    // Nom
+    const tdNom = document.createElement('td');
+    tdNom.textContent = kpi.nom;
+
+    // Catégorie
+    const tdCat = document.createElement('td');
+    tdCat.textContent = kpi.category || "Non classé";
+
+    // Objectif
+    const tdObj = document.createElement('td');
+    tdObj.textContent = `${objectif} ${unit}`;
+
+    // Moyenne (JAUGE)
+    const tdAvg = document.createElement('td');
+    tdAvg.appendChild(renderGauge(avg, objectif, unit, kpi.nom));
+
+    // Actions
+    const tdAct = document.createElement('td');
+    tdAct.innerHTML = `
+      <div class="actions-row">
+        <button class="action-btn" title="Modifier" onclick="editKPIById('${kpi.id}')">✏️</button>
+        <button class="action-btn" title="Supprimer" onclick="deleteKPIById('${kpi.id}')">🗑️</button>
+        <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.nom.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
+      </div>
+    `;
+
+    tr.appendChild(tdNom);
+    tr.appendChild(tdCat);
+    tr.appendChild(tdObj);
+    tr.appendChild(tdAvg); // <- jauge ici
+    tr.appendChild(tdAct);
+
     tbody.appendChild(tr);
   }
 }
+
 
 function generateInputs(count,vals=[]){
   const container=document.getElementById("newKpiValues"); if(!container) return; container.innerHTML="";
