@@ -4,23 +4,28 @@
   <meta charset="UTF-8">
   <title>KPI Dashboard – Firebase Sécurisé</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     :root{
       --main-width:100vw; --main-padding-x:18px; --main-radius:22px; --main-shadow:0 6px 24px #8ec6f755;
       --header-bg:#fff; --header-padding-x:12px; --header-margin-top:20px; --header-margin-bottom:12px; --header-min-height:70px;
       --logo-height:44px; --main-gap:26px; --card-padding:22px 18px 20px 18px; --card-radius:21px;
-      --graph-min-height:750px; --graph-max-height:60vh; --graph-margin-top:12px; --main-bg:#f4f4f4;
+      --graph-margin-top:12px; --main-bg:#f4f4f4;
+      --sidebar-w:200px;
     }
     html,body{height:100%;padding:0;margin:0;box-sizing:border-box;}
     body{
       font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--main-bg)!important;color:#223056;
-      min-height:100vh;display:flex;height:100vh;width:100vw;overflow-x:hidden;box-sizing:border-box;
+      min-height:100vh;display:flex;width:100vw;overflow-x:hidden;box-sizing:border-box;
     }
+
+    /* Sidebar */
     .sidebar{
       background:var(--main-bg); box-shadow:4px 0 22px #c5d6f7a0; border-radius:0 30px 30px 0;
-      min-width:180px;max-width:200px;width:200px;padding:21px 10px;display:flex;flex-direction:column;gap:6px;
+      min-width:var(--sidebar-w);max-width:var(--sidebar-w);padding:21px 10px;display:flex;flex-direction:column;gap:6px;
       position:fixed;left:0;top:0;height:100vh;z-index:100;box-sizing:border-box;
     }
     .sb-btn{
@@ -30,113 +35,124 @@
     }
     .sb-btn.active,.sb-btn:focus{background:#fff;color:#0e3b4d;box-shadow:0 3px 18px #8ec6f773}
     .sb-btn:hover{background:#fff;color:#1686c1}
-    .header,.main{max-width:calc(100vw - 200px); width:100%; margin:0 auto; box-sizing:border-box;}
+    .sidebar-logos { margin-top:auto; margin-bottom:20px; display:flex; flex-direction:column; align-items:center; gap:18px; }
+    .sidebar-logos img{max-width:140px;width:140px;height:auto;max-height:70px;border-radius:10px;background:#fff;box-shadow:0 1px 7px #8ec6f755;object-fit:contain;padding:5px 8px;transition:transform .18s}
+    .sidebar-logos img:hover{transform:scale(1.06);box-shadow:0 3px 13px #8ec6f799}
+
+    /* Layout principal */
+    .header,.main{max-width:calc(100vw - var(--sidebar-w)); width:100%; margin:0 auto; box-sizing:border-box;}
     .header{
       margin-top:var(--header-margin-top); margin-bottom:var(--header-margin-bottom); border-radius:var(--main-radius);
-      box-shadow:var(--main-shadow); background:var(--header-bg); backdrop-filter:blur(13px);
+      box-shadow:var(--main-shadow); background:#fff; backdrop-filter:blur(13px);
       display:flex; justify-content:space-between; align-items:center; padding:0 var(--header-padding-x);
       min-height:var(--header-min-height); position:relative; z-index:20; border:1.2px solid #e6e9ee; overflow-x:auto;
     }
     .header h1{font-size:23px;color:#1686c1;flex:1;text-align:center;font-weight:700;margin:0 20px;letter-spacing:.45px;line-height:1.2;min-width:0}
-    .main-content{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh;box-sizing:border-box;width:calc(100vw - 200px);max-width:100vw;overflow-x:hidden}
+    .main-content{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;box-sizing:border-box;max-width:100vw;overflow-x:hidden}
     .main{padding:0 10px 18px 10px;display:flex;flex-direction:column;gap:var(--main-gap);min-height:100vh;box-sizing:border-box;overflow-x:hidden}
     .card.section{display:none}.card.section.active{display:block;margin-top:0}
     .card{
       background:#fff;border-radius:var(--card-radius);border:1.4px solid #e6e9ee;box-shadow:var(--main-shadow);
-      padding:var(--card-padding);margin-bottom:10px;position:relative;max-width:100%;width:100%;box-sizing:border-box;overflow-x:auto;
+      padding:var(--card-padding);margin-bottom:10px;position:relative;max-width:100%;width:100%;box-sizing:border-box;overflow-x:hidden;
     }
 
-    /* ===== Ajustement hauteur : la zone graphique remplit le fond blanc ===== */
-    .graph-container{
-      position:relative;
-      height:calc(100vh - 210px); /* ajuste 240–260 si tu veux plus/moins d’espace */
-      min-height:0;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      width:100%;
-      box-sizing:border-box;
-      background:#f4f4f4!important;
+    /* Zone graphique */
+    .graph-container{ position:relative; height:calc(100vh - 210px); display:flex; flex-direction:column; gap:10px; width:100%; box-sizing:border-box; background:#f4f4f4!important; }
+    #chart, #preview-chart{
+      flex:1 1 auto; min-height:300px; background:#f4f4f4!important;
+      border-radius:13px; margin-top:var(--graph-margin-top); box-shadow:0 2px 18px #c0d7f7a6; width:100%; box-sizing:border-box;
     }
-    #chart{
-      flex:1 1 auto;
-      height:100%;
-      min-height:0;
-      max-height:none;
-      background:#f4f4f4!important; border-radius:13px; margin-top:var(--graph-margin-top); box-shadow:0 2px 18px #c0d7f7a6;
-      width:100%; min-width:340px; box-sizing:border-box;
-    }
-    /* Preview : libre mais responsive aussi */
-    #preview-chart{
-      flex:1 1 auto;
-      height:100%;
-      min-height:300px;
-      max-height:none;
-      background:#f4f4f4!important; border-radius:13px; margin-top:var(--graph-margin-top); box-shadow:0 2px 18px #c0d7f7a6;
-      width:100%; min-width:340px; box-sizing:border-box;
-    }
-    /* ====================================================================== */
 
     .export-pdf-btn{position:absolute;top:18px;right:26px;background:linear-gradient(90deg,#f4f4f4 0%,#fff 100%);color:#1686c1;border:none;border-radius:9px;font-size:15px;font-weight:600;padding:8px 20px;box-shadow:0 2px 8px #b8c7f733;cursor:pointer;transition:background .18s,color .12s;z-index:10}
     .export-pdf-btn:hover{background:linear-gradient(90deg,#fff 0%,#f4f4f4 100%);color:#0e3b4d}
-    .tableau-kpi{width:100%;border-radius:13px;overflow-x:auto;background:#fff;box-shadow:0 2px 11px #adc9ee1e;margin-top:6px;border:1.1px solid #e0e0e0;box-sizing:border-box}
-    .tableau-kpi table{border-collapse:collapse;width:100%;font-size:15px;min-width:550px}
-    .tableau-kpi th,.tableau-kpi td{padding:11px 13px;text-align:left;border-bottom:1.1px solid #e3effc;white-space:nowrap}
-    .tableau-kpi th{background:#f4f4f4;color:#2574c5;font-weight:700;letter-spacing:.08px}
+
+    /* Tableau KPI - SANS scroll horizontal */
+    .tableau-kpi{width:100%;border-radius:13px;background:#fff;box-shadow:0 2px 11px #adc9ee1e;margin-top:6px;border:1.1px solid #e0e0e0;box-sizing:border-box;overflow-x:hidden}
+    .tableau-kpi table{
+      border-collapse:collapse; width:100%;
+      table-layout:fixed; /* évite les débordements et répartit l’espace */
+    }
+    .tableau-kpi th,.tableau-kpi td{
+      padding:10px 12px; text-align:left; border-bottom:1.1px solid #e3effc;
+      white-space:normal; /* autorise le retour à la ligne */
+      word-break:break-word; /* coupe les mots trop longs */
+    }
+    .tableau-kpi th{
+      background:#f4f4f4;color:#2574c5;font-weight:700;letter-spacing:.08px
+    }
     .tableau-kpi th button{background:none;border:none;color:#1686c1;font-weight:700;font-size:15px;cursor:pointer;padding:0;margin:0;outline:none;transition:color .14s}
     .tableau-kpi th button:hover{color:#115b99;text-decoration:underline}
     .tableau-kpi tr:hover{background:#f5faff}
+
+    /* Largeurs de colonnes pour rester sur une page */
+    .col-nom{width:50%}
+    .col-cat{width:9%}
+    .col-obj{width:7%}
+    .col-moy{width:16%}
+    .col-act{width:18%}
+
     .btn-main{background:linear-gradient(90deg,#f4f4f4 0%,#fff 100%);color:#2574c5;border-radius:15px;border:none;font-size:15.5px;font-weight:600;padding:11px 25px;margin-top:13px;box-shadow:0 2px 8px #b8c7f733;cursor:pointer;transition:background .17s,color .13s}
     .btn-main:hover{background:linear-gradient(90deg,#fff 0%,#f4f4f4 100%);color:#0e3b4d}
-    .actions-row{display:flex;gap:12px;align-items:center}
-    .action-btn{background:#f4f4f4;color:#2574c5;border:1.2px solid #b4d0f6;border-radius:8px;padding:6px 13px;font-size:18px;cursor:pointer;transition:background .13s,color .12s,border .13s}
-    .action-btn:hover{background:#b4d0f6;color:#0e3b4d;border:1.2px solid #1686c1}
+
+    /* Actions */
+    .actions-row{display:flex;gap:10px;align-items:stretch}
+    /* Direction: plus petits + vertical */
+    .dir-col{display:flex;flex-direction:column;gap:6px;margin-right:6px;}
+    .small-btn{
+      background:#f4f4f4;color:#2574c5;border:1.1px solid #b4d0f6;border-radius:7px;
+      padding:4px 8px; font-size:14px; line-height:1; cursor:pointer;
+      transition:background .13s,color .12s,border .13s;
+      min-width:28px; text-align:center;
+    }
+    .small-btn:hover{background:#b4d0f6;color:#0e3b4d;border:1.1px solid #1686c1}
+    .dir-btn.active{ box-shadow:0 0 0 2px #1686c1 inset; font-weight:700; }
+
+    /* Autres boutons d’action (éditer/supprimer/dupliquer) — un poil réduits */
+    .action-btn{
+      background:#f4f4f4;color:#2574c5;border:1.1px solid #b4d0f6;border-radius:7px;
+      padding:6px 10px; font-size:15px; cursor:pointer;
+      transition:background .13s,color .12s,border .13s;
+      white-space:nowrap;
+    }
+    .action-btn:hover{background:#b4d0f6;color:#0e3b4d;border:1.1px solid #1686c1}
+
+    /* Jauges */
+    .gauge-wrap{display:flex;flex-direction:column;gap:6px;min-width:160px}
+    .gauge-bar{position:relative;width:100%;height:10px;border-radius:999px;background:#eef2f7;border:1px solid #e1e6ef;overflow:hidden}
+    .gauge-fill{height:100%;width:0%;background:#e74c3c;border-radius:999px;transition:width .35s ease}
+    .gauge-label{font-size:12.5px;color:#50607a}
+
     input,select{padding:7px;border-radius:6px;border:1px solid #b4d0f6;margin-bottom:8px;font-size:15px;box-sizing:border-box}
     label{margin-top:8px;font-size:15px}
-    #kpiSelect{min-width:350px!important;max-width:440px!important;font-size:16px}
+    #kpiSelect{min-width:260px;max-width:420px;font-size:16px}
     #kpi-list-header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;margin-bottom:9px;margin-top:-8px}
     #kpi-list-header>div{margin-top:0!important;margin-bottom:0!important}
     #kpi-list-header label{margin-bottom:0!important;font-size:14px!important;align-self:flex-start}
-    @media(max-width:900px){.main{padding:13px 2vw 18px 2vw}.main-content{margin-left:70px!important;width:calc(100vw - 70px)}.sidebar{min-width:70px;max-width:70px}.header{flex-direction:column;gap:6px}}
-    @media(max-width:700px){.main{padding:1vw}.main-content{margin-left:0!important;width:100vw}.sidebar{display:none}.header h1{font-size:14px}#chart,#preview-chart{min-height:160px}}
-.sidebar-logos {
-  margin-top: auto; /* pousse automatiquement en bas */
-  margin-bottom: 20px; /* petit espace avec le bas du ruban */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-}
 
-    .sidebar-logos img{max-width:140px;width:140px;height:auto;max-height:70px;border-radius:10px;background:#fff;box-shadow:0 1px 7px #8ec6f755;object-fit:contain;padding:5px 8px;transition:transform .18s}
-    .sidebar-logos img:hover{transform:scale(1.06);box-shadow:0 3px 13px #8ec6f799}
-    .spacer-top{flex:1 1 1}.spacer-bottom{flex:0 0 200px}
-
-/* ==== Jauge moyenne (atteinte objectif) ==== */
-.gauge-wrap{
-  display:flex; flex-direction:column; gap:6px; min-width:220px; max-width:380px;
-}
-.gauge-bar{
-  position:relative; width:100%; height:12px; border-radius:999px;
-  background:#eef2f7; border:1px solid #e1e6ef; overflow:hidden;
-}
-.gauge-fill{
-  height:100%; width:0%; background:#e74c3c; border-radius:999px; transition:width .35s ease;
-}
-.gauge-label{
-  font-size:12.5px; color:#50607a;
-}
-
-
+    @media(max-width:900px){
+      .main{padding:13px 2vw 18px 2vw}
+      .main-content{margin-left:70px!important;max-width:calc(100vw - 70px)}
+      .sidebar{min-width:70px;max-width:70px}
+      .header{flex-direction:column;gap:6px}
+      .col-nom{width:35%}.col-cat{width:20%}.col-obj{width:15%}.col-moy{width:18%}.col-act{width:12%}
+    }
+    @media(max-width:700px){
+      .main{padding:1vw}
+      .main-content{margin-left:0!important;max-width:100vw}
+      .sidebar{display:none}
+      .header h1{font-size:14px}
+      #chart,#preview-chart{min-height:160px}
+      .col-nom{width:40%}.col-cat{width:22%}.col-obj{width:13%}.col-moy{width:15%}.col-act{width:10%}
+    }
   </style>
 </head>
+
 <body>
+  <!-- Sidebar -->
   <div class="sidebar">
     <button class="sb-btn active" onclick="showSection('graph', this)">📊 Vue Graphique</button>
     <button class="sb-btn" onclick="showSection('list', this)">📋 Liste des KPI</button>
     <button class="sb-btn" onclick="showSection('add', this)">➕ Ajouter un KPI</button>
-    <button class="sb-btn" id="injectDemoKPI" style="margin-top:18px;background:#b3e6c1;">✨ Injecter les KPI de démo</button>
-    <div class="spacer-top"></div><div class="spacer-bottom"></div>
     <div class="sidebar-logos">
       <img src="logo-cw.png" alt="Logo Cushman & Wakefield">
       <img src="logo-meridien.png" alt="Logo Le Méridien">
@@ -144,6 +160,7 @@
     </div>
   </div>
 
+  <!-- Contenu -->
   <div class="main-content">
     <div class="header">
       <div class="logos"></div>
@@ -152,25 +169,26 @@
     </div>
 
     <div class="main">
-      <!-- GRAPH -->
+      <!-- SECTION GRAPH -->
       <div id="graph" class="card section active" style="position:relative;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 10px 12px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;min-width:300px;flex:2;">
+          <div style="display:flex;align-items:center;min-width:260px;flex:2;">
             <label for="kpiSelect" style="font-weight:600;margin-right:8px;white-space:nowrap;">KPI :</label>
             <select id="kpiSelect" onchange="updateGraph()" style="flex:1;"></select>
           </div>
           <div style="display:flex;align-items:center;min-width:120px;flex:1;">
             <label for="categoryFilter" style="margin-right:6px;white-space:nowrap;">Filtrer par catégorie :</label>
-            <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px;max-width:140px;"></select>
+            <select id="categoryFilter" onchange="applyCategoryFilter()" style="min-width:70px;max-width:160px;"></select>
           </div>
           <button class="export-pdf-btn" onclick="exportPNG()">📤 Export PNG</button>
         </div>
         <div class="graph-container"><div id="chart"></div></div>
       </div>
 
-      <!-- LISTE -->
+      <!-- SECTION LISTE -->
       <div id="list" class="card section">
         <h2>Liste des KPI</h2>
+
         <div id="kpi-list-header">
           <div style="display:flex;flex-direction:column;min-width:220px;max-width:400px;flex:2;">
             <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:0;">
@@ -187,8 +205,12 @@
             <select id="categoryFilterList" onchange="applyCategoryFilterList()" style="min-width:90px;max-width:160px;font-size:14px;padding:2px 8px;"></select>
           </div>
         </div>
+
         <div class="tableau-kpi">
           <table id="kpiTable">
+            <colgroup>
+              <col class="col-nom"><col class="col-cat"><col class="col-obj"><col class="col-moy"><col class="col-act">
+            </colgroup>
             <thead>
               <tr>
                 <th><button type="button" onclick="sortKpiTable('nom')">Nom <span id="sort-nom-indicator"></span></button></th>
@@ -203,9 +225,10 @@
         </div>
       </div>
 
-      <!-- AJOUT -->
+      <!-- SECTION AJOUT -->
       <div id="add" class="card section">
         <h2>Ajouter ou modifier un KPI</h2>
+
         <div id="categoryManagerAdd" style="margin:12px 0 20px 0;">
           <h3 style="font-size:15px;color:#1686c1;margin-bottom:8px;">Catégories</h3>
           <div id="categoryListAdd"></div>
@@ -214,17 +237,29 @@
             <button onclick="addCategoryFromAdd()" style="font-size:15px;padding:3px 10px;">+</button>
           </div>
         </div>
+
         <div style="display:flex;flex-direction:column;gap:7px;max-width:400px;">
           <label for="newKpiCategory">Catégorie :</label><select id="newKpiCategory"></select>
-          <label for="newKpiName">Nom :</label><input type="text" id="newKpiName" oninput="previewKPI">
-          <label for="newKpiObjectif">Objectif :</label><input type="number" id="newKpiObjectif" oninput="previewKPI">
+          <label for="newKpiName">Nom :</label><input type="text" id="newKpiName" oninput="previewKPI()">
+          <label for="newKpiObjectif">Objectif :</label><input type="number" id="newKpiObjectif" oninput="previewKPI()">
+
+          <!-- 2 boutons direction (petits) -->
+          <label>Sens de progression :</label>
+          <div id="dirToggleAdd" style="display:flex;gap:8px;margin-bottom:6px;">
+            <button type="button" id="dirHigherBtn" class="small-btn dir-btn" onclick="setNewKpiDir('higher')">↑ Plus haut</button>
+            <button type="button" id="dirLowerBtn" class="small-btn dir-btn" onclick="setNewKpiDir('lower')">↓ Plus bas</button>
+          </div>
+
           <label for="weekCount">Nombre de semaines :</label><input type="number" id="weekCount" value="6" min="1" max="20" onchange="generateInputs(this.value)">
           <label>Valeurs :</label><div id="newKpiValues" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;"></div>
           <button class="btn-main" onclick="addNewKPI()">Valider</button>
         </div>
+
         <div style="margin-top:24px;">
           <h3 style="margin:8px 0 0 0;color:#1686c1;">Prévisualisation</h3>
-          <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;"><div id="preview-chart"></div></div>
+          <div class="graph-container" style="min-height:unset;height:auto;max-height:unset;">
+            <div id="preview-chart"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -235,107 +270,264 @@
   <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore-compat.js"></script>
 
   <script>
-const firebaseConfig={apiKey:"AIzaSyC1bhFobfW4zTIQtAW1mF1j0uphbH1fpuO",authDomain:"kpi-eb25b.firebaseapp.com",projectId:"kpi-eb25b",storageBucket:"kpi-eb25b.appspot.com",messagingSenderId:"278263725815",appId:"1:278263725815:web:5fbf68de925ec49e9cdfd2",measurementId:"G-6L30F5NYEN"};
+/* =========================
+   FIREBASE CONFIG
+   ========================= */
+const firebaseConfig={
+  apiKey:"AIzaSyC1bhFobfW4zTIQtAW1mF1j0uphbH1fpuO",
+  authDomain:"kpi-eb25b.firebaseapp.com",
+  projectId:"kpi-eb25b",
+  storageBucket:"kpi-eb25b.appspot.com",
+  messagingSenderId:"278263725815",
+  appId:"1:278263725815:web:5fbf68de925ec49e9cdfd2",
+  measurementId:"G-6L30F5NYEN"
+};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
-
 const ADMIN_KEY="kpimeridien";
+
+/* =========================
+   ÉTAT GLOBAL
+   ========================= */
 let kpisArray=[]; let categories=[]; let currentCategory="all";
 let currentKPIIndex=0; let editingKPIId=null;
-
-// Tri
 let kpiSortField=null; let kpiSortAsc=true;
-function sortKpiTable(field){ if(kpiSortField===field){kpiSortAsc=!kpiSortAsc}else{ kpiSortField=field;kpiSortAsc=true } renderTable(); }
+let NEW_KPI_DIR='higher';
 
-// CATEGORIES
-async function fetchCategories(){ const snap=await db.collection("categories").get(); categories=[]; snap.forEach(doc=>categories.push({id:doc.id,name:doc.data().name})); renderCategoryList(); renderCategorySelect(); renderCategoryFilter(); renderCategoryFilterList(); }
-async function addCategory(){ const name=document.getElementById("newCategoryName").value.trim(); if(!name) return; if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert("Catégorie déjà existante.");return} await db.collection("categories").add({name,adminKey:ADMIN_KEY}); document.getElementById("newCategoryName").value=""; fetchCategories(); }
-async function addCategoryFromAdd(){ const name=document.getElementById("newCategoryNameAdd").value.trim(); if(!name) return; if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert("Catégorie déjà existante.");return} await db.collection("categories").add({name,adminKey:ADMIN_KEY}); document.getElementById("newCategoryNameAdd").value=""; fetchCategories(); }
-async function deleteCategory(id){ if(!confirm("Supprimer cette catégorie ?")) return; await db.collection("categories").doc(id).delete(); fetchCategories(); }
-function renderCategoryList(){ const divList=document.getElementById("categoryList"); if(divList){ divList.innerHTML=""; for(const cat of categories){ const span=document.createElement("span"); span.textContent=cat.name; span.style="margin-right:6px;font-size:13px;"; const btn=document.createElement("button"); btn.textContent="✕"; btn.title="Supprimer"; btn.onclick=()=>deleteCategory(cat.id); btn.style="background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;"; divList.appendChild(span); divList.appendChild(btn);} }
-  const divAdd=document.getElementById("categoryListAdd"); if(divAdd){ divAdd.innerHTML=""; for(const cat of categories){ const span=document.createElement("span"); span.textContent=cat.name; span.style="margin-right:6px;font-size:13px;"; const btn=document.createElement("button"); btn.textContent="✕"; btn.title="Supprimer"; btn.onclick=()=>deleteCategory(cat.id); btn.style="background:none;border:none;color:#c55;font-weight:bold;cursor:pointer;font-size:14px;padding:0 4px;"; divAdd.appendChild(span); divAdd.appendChild(btn);} } }
-function renderCategorySelect(selected=null){ const sel=document.getElementById("newKpiCategory"); if(!sel) return; sel.innerHTML=""; const def=document.createElement("option"); def.value=""; def.textContent="Non classé"; sel.appendChild(def); for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; if(selected && selected===cat.name) opt.selected=true; sel.appendChild(opt);} }
-function renderCategoryFilter(){ const sel=document.getElementById("categoryFilter"); if(!sel) return; sel.innerHTML="<option value='all'>Toutes</option>"; for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; sel.appendChild(opt);} sel.value=currentCategory; }
-function renderCategoryFilterList(){ const sel=document.getElementById("categoryFilterList"); if(!sel) return; sel.innerHTML="<option value='all'>Toutes</option>"; for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; sel.appendChild(opt);} sel.value=currentCategory; }
-function applyCategoryFilterList(){ currentCategory=document.getElementById("categoryFilterList").value; const selGraph=document.getElementById("categoryFilter"); if(selGraph) selGraph.value=currentCategory; renderTable(); updateGraph(); }
-function applyCategoryFilter(){ currentCategory=document.getElementById("categoryFilter").value; const selList=document.getElementById("categoryFilterList"); if(selList) selList.value=currentCategory; renderTable(); updateGraph(); }
+/* =========================
+   CATEGORIES
+   ========================= */
+async function fetchCategories(){
+  const snap=await db.collection("categories").get();
+  categories=[];
+  snap.forEach(doc=>categories.push({id:doc.id,name:doc.data().name}));
+  renderCategoryList(); renderCategorySelect(); renderCategoryFilter(); renderCategoryFilterList();
+}
+async function addCategory(){
+  const name=document.getElementById("newCategoryName").value.trim();
+  if(!name) return;
+  if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert("Catégorie déjà existante.");return}
+  await db.collection("categories").add({name,adminKey:ADMIN_KEY});
+  document.getElementById("newCategoryName").value="";
+  fetchCategories();
+}
+async function addCategoryFromAdd(){
+  const name=document.getElementById("newCategoryNameAdd").value.trim();
+  if(!name) return;
+  if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert("Catégorie déjà existante.");return}
+  await db.collection("categories").add({name,adminKey:ADMIN_KEY});
+  document.getElementById("newCategoryNameAdd").value="";
+  fetchCategories();
+}
+async function deleteCategory(id){
+  if(!confirm("Supprimer cette catégorie ?")) return;
+  await db.collection("categories").doc(id).delete();
+  fetchCategories();
+}
+function renderCategoryList(){
+  const divList=document.getElementById("categoryList");
+  if(divList){
+    divList.innerHTML="";
+    for(const cat of categories){
+      const span=document.createElement("span"); span.textContent=cat.name; span.style="margin-right:6px;font-size:13px;";
+      const btn=document.createElement("button"); btn.textContent="✕"; btn.title="Supprimer"; btn.onclick=()=>deleteCategory(cat.id);
+      btn.className="small-btn"; btn.style.marginRight="10px";
+      divList.appendChild(span); divList.appendChild(btn);
+    }
+  }
+  const divAdd=document.getElementById("categoryListAdd");
+  if(divAdd){
+    divAdd.innerHTML="";
+    for(const cat of categories){
+      const span=document.createElement("span"); span.textContent=cat.name; span.style="margin-right:6px;font-size:13px;";
+      const btn=document.createElement("button"); btn.textContent="✕"; btn.title="Supprimer"; btn.onclick=()=>deleteCategory(cat.id);
+      btn.className="small-btn"; btn.style.marginRight="10px";
+      divAdd.appendChild(span); divAdd.appendChild(btn);
+    }
+  }
+}
+function renderCategorySelect(selected=null){
+  const sel=document.getElementById("newKpiCategory"); if(!sel) return;
+  sel.innerHTML="";
+  const def=document.createElement("option"); def.value=""; def.textContent="Non classé"; sel.appendChild(def);
+  for(const cat of categories){
+    const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name;
+    if(selected && selected===cat.name) opt.selected=true; sel.appendChild(opt);
+  }
+}
+function renderCategoryFilter(){
+  const sel=document.getElementById("categoryFilter"); if(!sel) return;
+  sel.innerHTML="<option value='all'>Toutes</option>";
+  for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; sel.appendChild(opt); }
+  sel.value=currentCategory;
+}
+function renderCategoryFilterList(){
+  const sel=document.getElementById("categoryFilterList"); if(!sel) return;
+  sel.innerHTML="<option value='all'>Toutes</option>";
+  for(const cat of categories){ const opt=document.createElement("option"); opt.value=cat.name; opt.textContent=cat.name; sel.appendChild(opt); }
+  sel.value=currentCategory;
+}
+function applyCategoryFilterList(){
+  currentCategory=document.getElementById("categoryFilterList").value;
+  const selGraph=document.getElementById("categoryFilter"); if(selGraph) selGraph.value=currentCategory;
+  renderTable(); updateGraph();
+}
+function applyCategoryFilter(){
+  currentCategory=document.getElementById("categoryFilter").value;
+  const selList=document.getElementById("categoryFilterList"); if(selList) selList.value=currentCategory;
+  renderTable(); updateGraph();
+}
 
-// KPI CRUD
+/* =========================
+   KPI CRUD
+   ========================= */
 async function fetchKpiData(){
   try{
     const snapshot=await db.collection("kpi").get();
-    kpisArray=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.adminKey) delete d.adminKey; kpisArray.push({id:doc.id,...d}); });
-    currentKPIIndex=0; editingKPIId=null; renderTable(); updateGraph(); generateInputs(getWeeks().length); previewKPI(); checkHideInjectButton(); fetchCategories();
+    kpisArray=[];
+    snapshot.forEach(doc=>{
+      const d=doc.data(); if(d.adminKey) delete d.adminKey;
+      const direction = d.direction || getKpiDirectionFromDoc({nom:d.nom, category:d.category});
+      kpisArray.push({id:doc.id, ...d, direction});
+    });
+    currentKPIIndex=0; editingKPIId=null;
+    renderTable(); updateGraph(); generateInputs(getWeeks().length); previewKPI(); fetchCategories();
   }catch(e){ alert("Erreur de chargement Firestore : "+e); console.error(e); }
 }
 async function saveKPI(data,docId=null){
-  const payload={ nom:data.nom, objectif:data.objectif, valeurs:data.valeurs, adminKey:ADMIN_KEY, category:data.category||"" };
-  if(docId){ await db.collection("kpi").doc(docId).set(payload); } else { await db.collection("kpi").add(payload); }
+  const payload={
+    nom:data.nom,
+    objectif:data.objectif,
+    valeurs:data.valeurs,
+    category:data.category||"",
+    direction: data.direction || 'higher',
+    adminKey:ADMIN_KEY
+  };
+  if(docId){ await db.collection("kpi").doc(docId).set(payload,{merge:true}); }
+  else{ await db.collection("kpi").add(payload); }
   fetchKpiData();
 }
-async function deleteKPIById(docId){ if(!confirm("Supprimer ce KPI ?")) return; await db.collection("kpi").doc(docId).delete(); fetchKpiData(); }
+async function deleteKPIById(docId){
+  if(!confirm("Supprimer ce KPI ?")) return;
+  await db.collection("kpi").doc(docId).delete();
+  fetchKpiData();
+}
 function editKPIById(docId){
-  const idx=kpisArray.findIndex(k=>k.id===docId); if(idx===-1) return; const k=kpisArray[idx];
-  showSection('add',document.querySelectorAll('.sb-btn')[2]); document.getElementById("newKpiName").value=k.nom;
-  document.getElementById("newKpiObjectif").value=k.objectif; document.getElementById("weekCount").value=k.valeurs.length;
-  generateInputs(k.valeurs.length,k.valeurs); renderCategorySelect(k.category||""); editingKPIId=docId; currentKPIIndex=idx; setTimeout(previewKPI,50);
+  const idx=kpisArray.findIndex(k=>k.id===docId); if(idx===-1) return;
+  const k=kpisArray[idx];
+  showSection('add',document.querySelectorAll('.sb-btn')[2]);
+  document.getElementById("newKpiName").value=k.nom;
+  document.getElementById("newKpiObjectif").value=k.objectif;
+  document.getElementById("weekCount").value=k.valeurs.length;
+  generateInputs(k.valeurs.length,k.valeurs);
+  renderCategorySelect(k.category||"");
+  editingKPIId=docId; currentKPIIndex=idx;
+  NEW_KPI_DIR = k.direction || getKpiDirectionFromDoc(k);
+  setTimeout(()=>{ refreshDirButtons(); previewKPI(); },50);
 }
 async function duplicateKPI(name){
-  const k=kpisArray.find(x=>x.nom===name); if(!k) return; let base=name.replace(/\s*\(copie.*\)$/,""); let newName=base+" (copie)"; let c=2;
+  const k=kpisArray.find(x=>x.nom===name); if(!k) return;
+  let base=name.replace(/\s*\(copie.*\)$/,""); let newName=base+" (copie)"; let c=2;
   while(kpisArray.find(x=>x.nom===newName)){ newName=base+" (copie "+c+")"; c++; }
-  await db.collection("kpi").add({nom:newName,objectif:k.objectif,valeurs:[...k.valeurs],category:k.category||"",adminKey:ADMIN_KEY}); fetchKpiData();
+  await db.collection("kpi").add({
+    nom:newName, objectif:k.objectif, valeurs:[...k.valeurs], category:k.category||"",
+    direction:k.direction||'higher', adminKey:ADMIN_KEY
+  });
+  fetchKpiData();
 }
 async function addNewKPI(){
-  const nom=document.getElementById("newKpiName").value;
+  const nom=document.getElementById("newKpiName").value.trim();
   const objectif=parseFloat(document.getElementById("newKpiObjectif").value);
   const count=parseInt(document.getElementById("weekCount").value);
   const category=document.getElementById("newKpiCategory").value;
   const valeurs=Array.from({length:count},(_,i)=>parseFloat(document.getElementById("newVal"+i).value));
-  if(!nom || isNaN(objectif) || valeurs.some(isNaN)){ alert("Merci de remplir tous les champs."); return; }
-  await saveKPI({nom,objectif,valeurs,category},editingKPIId); showSection('list',document.querySelectorAll('.sb-btn')[1]); editingKPIId=null;
+  if(!nom || isNaN(objectif) || valeurs.some(v=>isNaN(v))){ alert("Merci de remplir tous les champs."); return; }
+  await saveKPI({nom,objectif,valeurs,category,direction:NEW_KPI_DIR},editingKPIId);
+  showSection('list',document.querySelectorAll('.sb-btn')[1]);
+  editingKPIId=null;
 }
 
-// NAV
-function showSection(id,btn){ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".sb-btn").forEach(b=>b.classList.remove("active")); if(btn) btn.classList.add("active");
-  if(id==="list") renderTable(); if(id==="graph") updateGraph(); if(id==="add") prepareAddForm();
+/* =========================
+   NAV + FORM
+   ========================= */
+function showSection(id,btn){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".sb-btn").forEach(b=>b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  if(id==="list") renderTable();
+  if(id==="graph") updateGraph();
+  if(id==="add") prepareAddForm();
 }
-function prepareAddForm(){ document.getElementById("newKpiName").value=""; document.getElementById("newKpiObjectif").value="";
-  document.getElementById("weekCount").value=getWeeks().length; generateInputs(getWeeks().length); renderCategorySelect(); editingKPIId=null; setTimeout(previewKPI,20);
+function prepareAddForm(){
+  document.getElementById("newKpiName").value="";
+  document.getElementById("newKpiObjectif").value="";
+  document.getElementById("weekCount").value=getWeeks().length;
+  generateInputs(getWeeks().length);
+  renderCategorySelect();
+  editingKPIId=null;
+  NEW_KPI_DIR='higher'; setTimeout(()=>{ refreshDirButtons(); previewKPI(); },20);
 }
-function getWeeks(){ if(kpisArray.length && kpisArray[0].valeurs) return kpisArray[0].valeurs.map((_,i)=>27+i); return [27,28,29,30,31,32]; }
+function getWeeks(){
+  if(kpisArray.length && kpisArray[0].valeurs) return kpisArray[0].valeurs.map((_,i)=>27+i);
+  return [27,28,29,30,31,32];
+}
+function generateInputs(n, values=[]){
+  const wrap=document.getElementById("newKpiValues"); wrap.innerHTML="";
+  for(let i=0;i<n;i++){
+    const inp=document.createElement("input");
+    inp.type="number"; inp.id="newVal"+i; inp.placeholder="S"+(27+i);
+    if(values[i]!==undefined) inp.value=values[i];
+    inp.oninput=previewKPI;
+    wrap.appendChild(inp);
+  }
+}
 
-// EXPORT PNG
+/* =========================
+   EXPORT
+   ========================= */
 function exportPNG(){
   const chartDiv=document.getElementById('chart'); if(!chartDiv) return;
   Plotly.toImage(chartDiv,{format:"png",width:1200,height:800}).then(dataUrl=>{
-    const a=document.createElement('a'); a.href=dataUrl; a.download='Graphique_KPI.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    const a=document.createElement('a'); a.href=dataUrl; a.download='Graphique_KPI.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   });
 }
 
+/* =========================
+   OUTILS TITRE
+   ========================= */
 function wrapTitle(text, maxCharsPerLine = 50) {
   const words = (text || "").split(/\s+/);
   let line = "", lines = [];
   for (const w of words) {
     if ((line + " " + w).trim().length > maxCharsPerLine) {
-      lines.push(line.trim());
-      line = w;
-    } else {
-      line += " " + w;
-    }
+      lines.push(line.trim()); line = w;
+    } else { line += " " + w; }
   }
   if (line.trim()) lines.push(line.trim());
   return lines.join("<br>");
 }
 
-// GRAPH
+/* =========================
+   GRAPH
+   ========================= */
 function updateGraph(){
-  const select=document.getElementById("kpiSelect"); const chartDiv=document.getElementById("chart"); if(!select||!chartDiv) return;
-  select.innerHTML=""; const filtered=kpisArray.filter(k=>currentCategory==="all"||(k.category||"")===currentCategory);
-  if(filtered.length===0){ chartDiv.innerHTML="<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>"; return; }
+  const select=document.getElementById("kpiSelect");
+  const chartDiv=document.getElementById("chart");
+  if(!select||!chartDiv) return;
+
+  select.innerHTML="";
+  const filtered=kpisArray.filter(k=>currentCategory==="all"||(k.category||"")===currentCategory);
+  if(filtered.length===0){
+    chartDiv.innerHTML="<p style='color:#888;text-align:center'>Aucun KPI à afficher</p>"; return;
+  }
   filtered.forEach((k,idx)=>{ const opt=document.createElement("option"); opt.value=idx; opt.text=k.nom; select.add(opt); });
   if(currentKPIIndex>=filtered.length) currentKPIIndex=0; select.value=currentKPIIndex;
-  const data=filtered[currentKPIIndex]; const weeks=data.valeurs.map((_,i)=>27+i); const suffix=(data.nom||"").includes('%')?'':'';
+
+  const data=filtered[currentKPIIndex];
+  const weeks=data.valeurs.map((_,i)=>27+i);
+  const suffix=(data.nom||"").includes('%')?'':'';
 
   const traces=[
     {x:weeks,y:data.valeurs,mode:'lines+markers',name:'Mesure',line:{color:'#1686c1',width:3},marker:{color:'#1686c1',size:8},
@@ -348,31 +540,12 @@ function updateGraph(){
 
   Plotly.newPlot('chart', traces, {
     title: { text: wrappedTitle, font: { color: '#1686c1', size: 30 }, x: 0.5, xanchor: 'center' },
-    plot_bgcolor: '#f4f4f4',
-    paper_bgcolor: '#f4f4f4',
-    font: { color: '#1686c1' },
-  xaxis: {
-    title: { text: 'Semaine (n°)', font: { size: 24 }, standoff: 28 }, // <- correct place
-    tickvals: weeks,
-    tickfont: { size: 20 },
-    automargin: true
-  },
-  yaxis: {
-    title: { text: 'Valeur', font: { size: 24 }, standoff: 10 },         // <- correct place
-    tickfont: { size: 20 },
-    automargin: true
-  },
-
-  showlegend: true,
-  hovermode: 'x unified',
-
-  // add space to the chart edges so titles breathe
-  margin: { t: 100, l: 100, r: 40, b: 100 },  // <- increase L & B
-  height: 650,
-  autosize: true
+    plot_bgcolor: '#f4f4f4', paper_bgcolor: '#f4f4f4', font: { color: '#1686c1' },
+    xaxis: { title: { text: 'Semaine (n°)', font: { size: 24 }, standoff: 28 }, tickvals: weeks, tickfont: { size: 20 }, automargin: true },
+    yaxis: { title: { text: 'Valeur', font: { size: 24 }, standoff: 10 }, tickfont: { size: 20 }, automargin: true },
+    showlegend: true, hovermode: 'x unified', margin: { t: 100, l: 100, r: 40, b: 100 }, height: 650, autosize: true
   }, {responsive:true});
 
-  // resize dynamique si la fenêtre change
   const el = document.getElementById('chart');
   window.addEventListener('resize', () => Plotly.Plots.resize(el));
 
@@ -398,47 +571,50 @@ function previewKPI(){
 
   Plotly.newPlot('preview-chart', traces, {
     title: { text: wrappedPrevTitle, font: { color: '#1686c1', size: 30 }, x: 0.5, xanchor: 'center' },
-    plot_bgcolor: '#f4f4f4',
-    paper_bgcolor: '#f4f4f4',
-    font: { color: '#1686c1' },
+    plot_bgcolor: '#f4f4f4', paper_bgcolor: '#f4f4f4', font: { color: '#1686c1' },
     xaxis: { title: { text: 'Semaine (n°)', font: { size: 24 } }, tickvals: x, tickfont: { size: 20 }, automargin: true, standoff: 18 },
     yaxis: { title: { text: 'Valeur', font: { size: 24 } }, tickfont: { size: 20 }, automargin: true, standoff: 18 },
-    showlegend: true,
-    hovermode: 'x unified',
-    margin: { t: 90, l: 60, r: 30, b: 60 },
-    autosize: true
+    showlegend: true, hovermode: 'x unified', margin: { t: 90, l: 60, r: 30, b: 60 }, autosize: true
   }, {responsive:true});
 }
 
-// Détermine le sens de "mieux" : plus haut = mieux (par défaut) ou plus bas = mieux
-function getKpiDirection(name){
-  const n = (name || "").toLowerCase();
-  // Heuristiques simples (tu peux affiner si besoin)
+/* =========================
+   DIRECTION (↑ / ↓) + % ATTEINTE
+   ========================= */
+const CATEGORY_DEFAULT_DIR = { "Budget":"lower", "Qualité":"higher", "Suivi":"higher" };
+function categoryDefaultDirection(cat){ return CATEGORY_DEFAULT_DIR[cat] || 'higher'; }
+function parseDirectionFromName(name){
+  if (typeof name !== 'string') return null;
+  if (/\[↓\]|^↓/.test(name)) return 'lower';
+  if (/\[↑\]|^↑/.test(name)) return 'higher';
+  return null;
+}
+function getKpiDirectionFromDoc(k){
+  if (typeof k === 'string') k = { nom:k };
+  if (k && (k.direction === 'higher' || k.direction === 'lower')) return k.direction;
+  const fromName = parseDirectionFromName(k?.nom || "");
+  if (fromName) return fromName;
+  if (k?.category) return categoryDefaultDirection(k.category);
+  const n = (k?.nom || "").toLowerCase();
   if (n.includes('écart') || n.includes('ecart') || n.includes('temps') || n.includes('jour')) return 'lower';
   return 'higher';
 }
-
-// Calcule le % d'atteinte de l'objectif en tenant compte du sens
-function computeAchievement(name, avg, objectif){
-  const dir = getKpiDirection(name);
-  let pct = dir === 'higher' ? (avg / objectif) * 100 : (objectif / avg) * 100;
-  // clamp
-  pct = Math.max(0, Math.min(pct, 130)); // on limite l’affichage à 130% max
+function computeAchievement(kpiOrName, avg, objectif){
+  const dir = getKpiDirectionFromDoc(kpiOrName);
+  let pct = (!isFinite(avg) || !isFinite(objectif) || objectif === 0) ? 0
+           : (dir === 'higher' ? (avg / objectif) * 100 : (objectif / avg) * 100);
+  pct = Math.max(0, Math.min(pct, 130));
   return { pct, dir };
 }
-
-// Couleur selon le % (rouge → orange → jaune → vert)
 function gaugeColor(pct){
-  if (pct >= 100) return '#2ecc71';   // vert
-  if (pct >= 90)  return '#9bdc65';   // vert clair
-  if (pct >= 80)  return '#f1c40f';   // jaune
-  if (pct >= 60)  return '#f39c12';   // orange
-  return '#e74c3c';                   // rouge
+  if (pct >= 100) return '#2ecc71';
+  if (pct >= 90)  return '#9bdc65';
+  if (pct >= 80)  return '#f1c40f';
+  if (pct >= 60)  return '#f39c12';
+  return '#e74c3c';
 }
-
-// Construit le DOM de la jauge
-function renderGauge(avg, objectif, unit, name){
-  const { pct, dir } = computeAchievement(name, avg, objectif);
+function renderGauge(avg, objectif, unit, kpiOrName){
+  const { pct, dir } = computeAchievement(kpiOrName, avg, objectif);
 
   const wrap = document.createElement('div');
   wrap.className = 'gauge-wrap';
@@ -448,127 +624,115 @@ function renderGauge(avg, objectif, unit, name){
 
   const fill = document.createElement('div');
   fill.className = 'gauge-fill';
-  fill.style.width = Math.min(pct, 100) + '%';
+  fill.style.width = (isFinite(pct)?pct:0) + '%';
   fill.style.background = gaugeColor(pct);
-
-  bar.appendChild(fill);
 
   const label = document.createElement('div');
   label.className = 'gauge-label';
-  // Texte indicatif (FR)
-  const pctTxt = `${Math.round(pct)}%`;
-  const senseTxt = dir === 'higher' ? `de l’objectif` : `du seuil`;
-  label.textContent = `${avg} ${unit} • ${pctTxt} ${senseTxt}`;
+  const arrow = (dir==='higher'?'↑':'↓');
+  label.textContent = `${arrow} ${pct.toFixed(0)}% atteint`;
 
+  bar.appendChild(fill);
   wrap.appendChild(bar);
   wrap.appendChild(label);
   return wrap;
 }
 
+/* =========================
+   FORM DIRECTION (AJOUT/ÉDITION)
+   ========================= */
+function refreshDirButtons(){
+  document.getElementById('dirHigherBtn')?.classList.toggle('active', NEW_KPI_DIR==='higher');
+  document.getElementById('dirLowerBtn')?.classList.toggle('active', NEW_KPI_DIR==='lower');
+}
+function setNewKpiDir(d){ NEW_KPI_DIR = d; refreshDirButtons(); previewKPI(); }
 
-
-// TABLE
+/* =========================
+   TABLE + TRI
+   ========================= */
+function sortKpiTable(field){
+  if(kpiSortField===field){kpiSortAsc=!kpiSortAsc}else{ kpiSortField=field; kpiSortAsc=true }
+  renderTable();
+}
 function renderTable(){
-  const tbody = document.querySelector("#kpiTable tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+  const tbody=document.querySelector("#kpiTable tbody"); if(!tbody) return;
+  tbody.innerHTML="";
+  let arr=kpisArray.filter(k=>currentCategory==="all"||(k.category||"")===currentCategory);
 
-  let filtered = kpisArray.filter(k => currentCategory === "all" || (k.category || "") === currentCategory);
-
-  // Tri
-  if (kpiSortField){
-    filtered.sort((a,b)=>{
-      const va = (kpiSortField === "category" ? (a.category || "Non classé") : a.nom).toLowerCase();
-      const vb = (kpiSortField === "category" ? (b.category || "Non classé") : b.nom).toLowerCase();
-      if (va < vb) return kpiSortAsc ? -1 : 1;
-      if (va > vb) return kpiSortAsc ? 1 : -1;
-      return 0;
+  if(kpiSortField){
+    arr=[...arr].sort((a,b)=>{
+      const A=(a[kpiSortField]??"").toString().toLowerCase();
+      const B=(b[kpiSortField]??"").toString().toLowerCase();
+      return kpiSortAsc ? (A<B?-1:A>B?1:0) : (A>B?-1:A<B?1:0);
     });
-  }
-  document.getElementById("sort-nom-indicator").innerHTML =
-    (kpiSortField === "nom" ? (kpiSortAsc ? "▲" : "▼") : "");
-  document.getElementById("sort-category-indicator").innerHTML =
-    (kpiSortField === "category" ? (kpiSortAsc ? "▲" : "▼") : "");
-
-  if (filtered.length === 0){
-    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;color:#888;'>Aucun KPI à afficher</td></tr>";
-    return;
+    document.getElementById("sort-nom-indicator").textContent = (kpiSortField==='nom'?(kpiSortAsc?'▲':'▼'):'');
+    document.getElementById("sort-category-indicator").textContent = (kpiSortField==='category'?(kpiSortAsc?'▲':'▼'):'');
+  } else {
+    document.getElementById("sort-nom-indicator").textContent = '';
+    document.getElementById("sort-category-indicator").textContent = '';
   }
 
-  for (const kpi of filtered){
-    const tr = document.createElement("tr");
-
-    // Données
-    const objectif = kpi.objectif;
-    const avg = +(kpi.valeurs.reduce((a,b)=>a+b,0) / kpi.valeurs.length).toFixed(2);
-    const unit =
-      kpi.nom.includes('%') ? '%' :
-      (kpi.nom.includes('€') ? '€' :
-      (kpi.nom.toLowerCase().includes('jour') ? 'j' : ''));
+  for(const k of arr){
+    const tr=document.createElement("tr");
 
     // Nom
-    const tdNom = document.createElement('td');
-    tdNom.textContent = kpi.nom;
+    const tdNom=document.createElement("td"); tdNom.textContent=k.nom; tdNom.className='col-nom'; tr.appendChild(tdNom);
 
     // Catégorie
-    const tdCat = document.createElement('td');
-    tdCat.textContent = kpi.category || "Non classé";
+    const tdCat=document.createElement("td"); tdCat.textContent=k.category||''; tdCat.className='col-cat'; tr.appendChild(tdCat);
 
     // Objectif
-    const tdObj = document.createElement('td');
-    tdObj.textContent = `${objectif} ${unit}`;
+    const tdObj=document.createElement("td"); tdObj.textContent=k.objectif; tdObj.className='col-obj'; tr.appendChild(tdObj);
 
-    // Moyenne (JAUGE)
-    const tdAvg = document.createElement('td');
-    tdAvg.appendChild(renderGauge(avg, objectif, unit, kpi.nom));
+    // Moyenne + jauge
+    const tdAvg=document.createElement("td"); tdAvg.className='col-moy';
+    const avg = (k.valeurs && k.valeurs.length) ? (k.valeurs.reduce((a,b)=>a+b,0) / k.valeurs.length) : 0;
+    tdAvg.appendChild(renderGauge(avg, k.objectif, '', k));
+    tr.appendChild(tdAvg);
 
-    // Actions
-    const tdAct = document.createElement('td');
+    // Actions : colonne compacte, boutons ↑/↓ VERTICAUX (petits)
+    const tdAct=document.createElement("td"); tdAct.className='col-act';
     tdAct.innerHTML = `
       <div class="actions-row">
-        <button class="action-btn" title="Modifier" onclick="editKPIById('${kpi.id}')">✏️</button>
-        <button class="action-btn" title="Supprimer" onclick="deleteKPIById('${kpi.id}')">🗑️</button>
-        <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${kpi.nom.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
+        <div class="dir-col">
+          <button class="small-btn dir-btn ${getKpiDirectionFromDoc(k)==='higher'?'active':''}"
+                  title="Plus haut = mieux" onclick="setDirection('${k.id}','higher')">↑</button>
+          <button class="small-btn dir-btn ${getKpiDirectionFromDoc(k)==='lower'?'active':''}"
+                  title="Plus bas = mieux" onclick="setDirection('${k.id}','lower')">↓</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="action-btn" title="Modifier" onclick="editKPIById('${k.id}')">✏️</button>
+          <button class="action-btn" title="Supprimer" onclick="deleteKPIById('${k.id}')">🗑️</button>
+          <button class="action-btn" title="Dupliquer" onclick="duplicateKPI('${k.nom.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">📑</button>
+        </div>
       </div>
     `;
-
-    tr.appendChild(tdNom);
-    tr.appendChild(tdCat);
-    tr.appendChild(tdObj);
-    tr.appendChild(tdAvg); // <- jauge ici
     tr.appendChild(tdAct);
 
     tbody.appendChild(tr);
   }
+
+  renderCategoryFilter();
+  renderCategoryFilterList();
 }
 
-
-function generateInputs(count,vals=[]){
-  const container=document.getElementById("newKpiValues"); if(!container) return; container.innerHTML="";
-  const startWeek=27; for(let i=0;i<count;i++){ const input=document.createElement("input");
-    input.type="number"; input.step="any"; input.id="newVal"+i; input.placeholder="Semaine "+(startWeek+i);
-    input.style="padding:7px;border-radius:6px;border:1px solid #b4d0f6;"; if(vals[i]!==undefined) input.value=vals[i];
-    input.oninput=previewKPI; container.appendChild(input); }
-  setTimeout(previewKPI,20);
+/* =========================
+   SET DIRECTION (LISTE)
+   ========================= */
+async function setDirection(docId, dir){
+  try{
+    await db.collection("kpi").doc(docId).set({ direction: dir, adminKey: ADMIN_KEY }, { merge:true });
+    const i = kpisArray.findIndex(k=>k.id===docId);
+    if (i>-1){ kpisArray[i].direction = dir; }
+    renderTable(); updateGraph();
+  }catch(e){
+    alert("Impossible de mettre à jour le sens : "+e);
+    console.error(e);
+  }
 }
 
-// DEMO
-document.getElementById("injectDemoKPI").onclick=async function(){
-  if(!confirm("Cette opération va remplacer tous les KPI par les valeurs de démo ! Continuer ?")) return;
-  const btn=this; btn.disabled=true; btn.innerText="Injection en cours...";
-  const snap=await db.collection("kpi").get(); const batch=db.batch(); snap.forEach(doc=>batch.delete(doc.ref)); await batch.commit();
-  const demo=[
-    {nom:"Écart budget prévisionnel / réalisé (%)",objectif:10,valeurs:[9.12,10.85,10.2,9.8,8.47,8.47],category:"Budget",adminKey:ADMIN_KEY},
-    {nom:"Taux de valorisation des devis en moins de 5 jours (%)",objectif:90,valeurs:[73.57,95.39,88.23,91.12,72.56,98.19],category:"Suivi",adminKey:ADMIN_KEY},
-    {nom:"Temps moyen de traitement d’un défaut signalé (en jours)",objectif:2,valeurs:[1.78,1.66,2.01,1.86,1.67,1.9],category:"Qualité",adminKey:ADMIN_KEY}
-  ];
-  await Promise.all(demo.map(k=>db.collection("kpi").add(k)));
-  btn.innerText="KPI de démo injectés !"; setTimeout(()=>{ fetchKpiData(); btn.disabled=false; btn.innerText="✨ Injecter les KPI de démo"; checkHideInjectButton(); },800);
-};
-async function checkHideInjectButton(){ const snapshot=await db.collection("kpi").get(); const btn=document.getElementById("injectDemoKPI"); btn.style.display=(snapshot.size>0)?"none":""; }
-
-// INIT
-window.onload=fetchKpiData;
+// Ready
+window.addEventListener('load', fetchKpiData);
   </script>
 </body>
 </html>
