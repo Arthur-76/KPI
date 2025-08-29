@@ -250,7 +250,7 @@
             <button type="button" id="dirLowerBtn" class="small-btn dir-btn" onclick="setNewKpiDir('lower')">↓ Plus bas</button>
           </div>
 
-          <label for="weekCount">Nombre de semaines :</label><input type="number" id="weekCount" value="6" min="1" max="20" onchange="generateInputs(this.value)">
+          <label for="weekCount">Nombre de semaines :</label><input type="number" id="weekCount" value="6" min="1" max="20" onchange="preserveAndGenerate(this.value)">
           <label>Valeurs :</label><div id="newKpiValues" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;"></div>
           <button class="btn-main" onclick="addNewKPI()">Valider</button>
         </div>
@@ -481,6 +481,22 @@ function generateInputs(n, values=[]){
     inp.oninput=previewKPI;
     wrap.appendChild(inp);
   }
+}
+
+/* ========= PATCH: préserver les valeurs quand on change le nombre ========= */
+function getCurrentFormValues(){
+  const wrap = document.getElementById("newKpiValues");
+  if(!wrap) return [];
+  const inputs = wrap.querySelectorAll('input[id^="newVal"]');
+  return Array.from(inputs).map(inp=>{
+    const v = parseFloat(inp.value);
+    return isNaN(v) ? '' : v;  // on garde vide si champ vide
+  });
+}
+function preserveAndGenerate(n){
+  const existing = getCurrentFormValues();
+  generateInputs(parseInt(n,10), existing);
+  previewKPI();
 }
 
 /* =========================
@@ -736,3 +752,4 @@ window.addEventListener('load', fetchKpiData);
   </script>
 </body>
 </html>
+
